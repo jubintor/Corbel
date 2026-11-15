@@ -13,6 +13,12 @@ from corbel.domains.data_intelligence.models import (  # noqa: F401 - Register P
     DatasetVersion,
     DataSource,
 )
+from corbel.domains.ontology.models import (  # noqa: F401 - Register Phase 4 models
+    BusinessObject,
+    Property,
+    PropertyMapping,
+    Relationship,
+)
 from corbel.domains.tenancy.models import (  # noqa: F401 - Register Phase 2 tenancy models
     Organization,
     OrganizationMember,
