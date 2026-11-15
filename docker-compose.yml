@@ -46,6 +46,7 @@ services:
       - ./alembic:/app/alembic
       - ./tests:/app/tests
       - ./pyproject.toml:/app/pyproject.toml
+      - ./data:/app/data
     command: ["sh", "-c", "alembic upgrade head && uvicorn corbel.main:app --host 0.0.0.0 --port 8000 --reload"]
     restart: unless-stopped
 

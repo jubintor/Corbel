@@ -61,6 +61,40 @@ class Settings(BaseSettings):
         description="Maximum permitted dataset upload file size in bytes",
     )
 
+    # Structured Querying & Early AI Gateway Settings (Phase 5)
+    AI_PROVIDER: str = Field(
+        default="mock",
+        description="AI Model Gateway provider: 'mock', 'anthropic', or 'openai'",
+    )
+    ANTHROPIC_API_KEY: str | None = Field(
+        default=None,
+        description="API key for Anthropic Claude hosted model gateway",
+    )
+    ANTHROPIC_MODEL: str = Field(
+        default="claude-3-5-sonnet-20241022",
+        description="Anthropic model identifier",
+    )
+    OPENAI_API_KEY: str | None = Field(
+        default=None,
+        description="API key for OpenAI GPT hosted model gateway",
+    )
+    OPENAI_MODEL: str = Field(
+        default="gpt-4o",
+        description="OpenAI model identifier",
+    )
+    AI_REQUEST_TIMEOUT_SECONDS: float = Field(
+        default=30.0,
+        description="Timeout in seconds for external AI gateway requests",
+    )
+    AI_MAX_RETRIES: int = Field(
+        default=2,
+        description="Maximum retry attempts for transient AI gateway errors",
+    )
+    MAX_QUERY_ROW_LIMIT: int = Field(
+        default=500,
+        description="Maximum row limit permitted for structured query executions",
+    )
+
     model_config = SettingsConfigDict(
         env_file=".env",
         env_file_encoding="utf-8",

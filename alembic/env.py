@@ -19,6 +19,9 @@ from corbel.domains.ontology.models import (  # noqa: F401 - Register Phase 4 mo
     PropertyMapping,
     Relationship,
 )
+from corbel.domains.query.models import (  # noqa: F401 - Register Phase 5 models
+    QueryExecution,
+)
 from corbel.domains.tenancy.models import (  # noqa: F401 - Register Phase 2 tenancy models
     Organization,
     OrganizationMember,

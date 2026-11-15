@@ -5,6 +5,7 @@ import type { Project } from '../types/auth'
 import { AuthApiError } from '../services/auth'
 import { DatasetWorkspace } from './DatasetWorkspace'
 import { OntologyWorkspace } from './OntologyWorkspace'
+import { QueryWorkspace } from './QueryWorkspace'
 
 export function ProjectWorkspace() {
   const { user, token, activeOrg } = useAuth()
@@ -12,7 +13,7 @@ export function ProjectWorkspace() {
   const [loading, setLoading] = useState(false)
   const [error, setError] = useState<string | null>(null)
   const [activeProject, setActiveProject] = useState<Project | null>(null)
-  const [projectSubView, setProjectSubView] = useState<'datasets' | 'ontology'>('datasets')
+  const [projectSubView, setProjectSubView] = useState<'datasets' | 'ontology' | 'query'>('datasets')
 
   // Create Project state
   const [showCreateModal, setShowCreateModal] = useState(false)
@@ -144,12 +145,29 @@ export function ProjectWorkspace() {
             </svg>
             <span>Ontology & Semantic Discovery</span>
           </button>
+          <button
+            type="button"
+            data-testid="tab-query"
+            onClick={() => setProjectSubView('query')}
+            className={`px-3.5 py-1.5 rounded-lg text-xs font-semibold transition-colors flex items-center gap-2 ${
+              projectSubView === 'query'
+                ? 'bg-indigo-600 text-white shadow-sm'
+                : 'text-slate-400 hover:text-white hover:bg-slate-800/60'
+            }`}
+          >
+            <svg className="w-3.5 h-3.5" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+              <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M21 21l-6-6m2-5a7 7 0 11-14 0 7 7 0 0114 0z" />
+            </svg>
+            <span>Structured Querying & AI</span>
+          </button>
         </div>
 
         {projectSubView === 'datasets' ? (
           <DatasetWorkspace project={activeProject} onBack={() => setActiveProject(null)} />
-        ) : (
+        ) : projectSubView === 'ontology' ? (
           <OntologyWorkspace project={activeProject} onBack={() => setActiveProject(null)} />
+        ) : (
+          <QueryWorkspace project={activeProject} onBack={() => setActiveProject(null)} />
         )}
       </div>
     )
