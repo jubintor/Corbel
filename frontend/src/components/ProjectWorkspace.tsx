@@ -6,6 +6,7 @@ import { AuthApiError } from '../services/auth'
 import { DatasetWorkspace } from './DatasetWorkspace'
 import { OntologyWorkspace } from './OntologyWorkspace'
 import { QueryWorkspace } from './QueryWorkspace'
+import { ProcessWorkspace } from './ProcessWorkspace'
 
 export function ProjectWorkspace() {
   const { user, token, activeOrg } = useAuth()
@@ -13,7 +14,7 @@ export function ProjectWorkspace() {
   const [loading, setLoading] = useState(false)
   const [error, setError] = useState<string | null>(null)
   const [activeProject, setActiveProject] = useState<Project | null>(null)
-  const [projectSubView, setProjectSubView] = useState<'datasets' | 'ontology' | 'query'>('datasets')
+  const [projectSubView, setProjectSubView] = useState<'datasets' | 'ontology' | 'query' | 'process'>('datasets')
 
   // Create Project state
   const [showCreateModal, setShowCreateModal] = useState(false)
@@ -160,14 +161,31 @@ export function ProjectWorkspace() {
             </svg>
             <span>Structured Querying & AI</span>
           </button>
+          <button
+            type="button"
+            data-testid="tab-process"
+            onClick={() => setProjectSubView('process')}
+            className={`px-3.5 py-1.5 rounded-lg text-xs font-semibold transition-colors flex items-center gap-2 ${
+              projectSubView === 'process'
+                ? 'bg-indigo-600 text-white shadow-sm'
+                : 'text-slate-400 hover:text-white hover:bg-slate-800/60'
+            }`}
+          >
+            <svg className="w-3.5 h-3.5" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+              <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M9 19v-6a2 2 0 00-2-2H5a2 2 0 00-2 2v6a2 2 0 002 2h2a2 2 0 002-2zm0 0V9a2 2 0 012-2h2a2 2 0 012 2v10m-6 0a2 2 0 002 2h2a2 2 0 002-2m0 0V5a2 2 0 012-2h2a2 2 0 012 2v14a2 2 0 01-2 2h-2a2 2 0 01-2-2z" />
+            </svg>
+            <span>Process Intelligence</span>
+          </button>
         </div>
 
         {projectSubView === 'datasets' ? (
           <DatasetWorkspace project={activeProject} onBack={() => setActiveProject(null)} />
         ) : projectSubView === 'ontology' ? (
           <OntologyWorkspace project={activeProject} onBack={() => setActiveProject(null)} />
-        ) : (
+        ) : projectSubView === 'query' ? (
           <QueryWorkspace project={activeProject} onBack={() => setActiveProject(null)} />
+        ) : (
+          <ProcessWorkspace project={activeProject} onBack={() => setActiveProject(null)} />
         )}
       </div>
     )

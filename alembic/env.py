@@ -22,6 +22,12 @@ from corbel.domains.ontology.models import (  # noqa: F401 - Register Phase 4 mo
 from corbel.domains.query.models import (  # noqa: F401 - Register Phase 5 models
     QueryExecution,
 )
+from corbel.domains.process_intelligence.models import (  # noqa: F401 - Register Phase 6 models
+    Process,
+    ProcessCase,
+    ProcessEvent,
+    ProcessEventDatasetVersion,
+)
 from corbel.domains.tenancy.models import (  # noqa: F401 - Register Phase 2 tenancy models
     Organization,
     OrganizationMember,
