@@ -3,12 +3,14 @@ import { useAuth } from '../context/AuthContext'
 import { listProjects, createProject, deleteProject } from '../services/projects'
 import type { Project } from '../types/auth'
 import { AuthApiError } from '../services/auth'
+import { DatasetWorkspace } from './DatasetWorkspace'
 
 export function ProjectWorkspace() {
   const { user, token, activeOrg } = useAuth()
   const [projects, setProjects] = useState<Project[]>([])
   const [loading, setLoading] = useState(false)
   const [error, setError] = useState<string | null>(null)
+  const [activeProject, setActiveProject] = useState<Project | null>(null)
 
   // Create Project state
   const [showCreateModal, setShowCreateModal] = useState(false)
@@ -37,7 +39,7 @@ export function ProjectWorkspace() {
     } finally {
       setLoading(false)
     }
-  }, [token, activeOrg])
+  }, [token, activeOrg?.id])
 
   useEffect(() => {
     loadTenantProjects()
@@ -103,6 +105,10 @@ export function ProjectWorkspace() {
         </p>
       </div>
     )
+  }
+
+  if (activeProject) {
+    return <DatasetWorkspace project={activeProject} onBack={() => setActiveProject(null)} />
   }
 
   return (
@@ -174,11 +180,22 @@ export function ProjectWorkspace() {
           {projects.map((proj) => (
             <div
               key={proj.id}
-              className="p-4 rounded-xl bg-slate-950/60 border border-slate-800/80 hover:border-slate-700/80 transition-colors flex flex-col justify-between space-y-3"
+              data-testid={`project-card-${proj.id}`}
+              onClick={() => setActiveProject(proj)}
+              className="p-4 rounded-xl bg-slate-950/60 border border-slate-800/80 hover:border-indigo-500/50 hover:bg-slate-950/90 transition-all flex flex-col justify-between space-y-3 cursor-pointer group shadow-sm hover:shadow-indigo-500/10"
             >
               <div>
                 <div className="flex items-start justify-between gap-2">
-                  <h4 className="font-bold text-white text-sm truncate">{proj.name}</h4>
+                  <button
+                    type="button"
+                    onClick={(e) => {
+                      e.stopPropagation()
+                      setActiveProject(proj)
+                    }}
+                    className="font-bold text-white text-sm truncate group-hover:text-indigo-400 transition-colors text-left"
+                  >
+                    {proj.name}
+                  </button>
                   <span className="text-[9px] font-mono px-1.5 py-0.5 rounded bg-emerald-500/10 text-emerald-400 border border-emerald-500/20 shrink-0">
                     {proj.status}
                   </span>
@@ -192,10 +209,31 @@ export function ProjectWorkspace() {
               </div>
 
               <div className="pt-3 border-t border-slate-800/60 flex items-center justify-between text-[11px] text-slate-500">
-                <span>Created {new Date(proj.created_at).toLocaleDateString()}</span>
+                <div className="flex items-center gap-3">
+                  <button
+                    type="button"
+                    data-testid="open-workspace-btn"
+                    aria-label={`Open workspace for ${proj.name}`}
+                    onClick={(e) => {
+                      e.stopPropagation()
+                      setActiveProject(proj)
+                    }}
+                    className="px-2.5 py-1 bg-indigo-600/20 hover:bg-indigo-600/30 text-indigo-300 font-semibold rounded text-[11px] transition-colors flex items-center gap-1.5"
+                  >
+                    <span>Open Workspace</span>
+                    <svg className="w-3.5 h-3.5" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                      <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M9 5l7 7-7 7" />
+                    </svg>
+                  </button>
+                  <span>Created {new Date(proj.created_at).toLocaleDateString()}</span>
+                </div>
                 {activeOrg.role === 'ORG_ADMIN' && (
                   <button
-                    onClick={() => handleDeleteProject(proj.id, proj.name)}
+                    type="button"
+                    onClick={(e) => {
+                      e.stopPropagation()
+                      handleDeleteProject(proj.id, proj.name)
+                    }}
                     className="text-rose-400 hover:text-rose-300 hover:underline transition-colors"
                   >
                     Delete

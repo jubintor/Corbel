@@ -1,18 +1,24 @@
 """Alembic migration environment configured for Corbel."""
 
 from logging.config import fileConfig
-from sqlalchemy import create_engine, pool
-from alembic import context
 
+from sqlalchemy import create_engine, pool
+
+from alembic import context
 from corbel.core.config import get_settings
 from corbel.core.database import Base
 from corbel.core.models import SystemMetadata  # noqa: F401 - Register models with Base.metadata
+from corbel.domains.data_intelligence.models import (  # noqa: F401 - Register Phase 3 models
+    Dataset,
+    DatasetVersion,
+    DataSource,
+)
 from corbel.domains.tenancy.models import (  # noqa: F401 - Register Phase 2 tenancy models
     Organization,
-    User,
     OrganizationMember,
     Project,
     ProjectMember,
+    User,
 )
 
 # this is the Alembic Config object, which provides

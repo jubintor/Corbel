@@ -51,6 +51,16 @@ class Settings(BaseSettings):
     ACCESS_TOKEN_EXPIRE_MINUTES: int = Field(default=60, description="Access token expiration window in minutes")
     REFRESH_TOKEN_EXPIRE_DAYS: int = Field(default=7, description="Refresh token expiration window in days")
 
+    # Data Intelligence & Profiling Settings (Phase 3)
+    DATASET_STORAGE_DIR: str = Field(
+        default="./data/datasets",
+        description="Local directory path for securely isolated dataset storage",
+    )
+    MAX_UPLOAD_SIZE_BYTES: int = Field(
+        default=52428800,  # 50 MB
+        description="Maximum permitted dataset upload file size in bytes",
+    )
+
     model_config = SettingsConfigDict(
         env_file=".env",
         env_file_encoding="utf-8",

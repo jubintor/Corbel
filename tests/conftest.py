@@ -10,7 +10,7 @@ from httpx import ASGITransport, AsyncClient
 os.environ["ENVIRONMENT"] = "test"
 os.environ["DEBUG"] = "true"
 os.environ.setdefault("POSTGRES_SERVER", "localhost")
-os.environ.setdefault("POSTGRES_PORT", "5432")
+os.environ.setdefault("POSTGRES_PORT", os.environ.get("POSTGRES_PORT", "5433"))
 os.environ.setdefault("POSTGRES_USER", "corbel")
 os.environ.setdefault("POSTGRES_PASSWORD", "corbel_secret_password")
 os.environ.setdefault("POSTGRES_DB", "corbel_db")

@@ -70,3 +70,8 @@ secrets/
 # Python tooling
 .pyright/
 .pyre/
+
+# Local uploaded datasets and test fixtures
+data/
+corbel_phase3_test.csv
+corbel_unsupported_test.txt
