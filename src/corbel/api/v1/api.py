@@ -3,6 +3,7 @@
 from fastapi import APIRouter
 
 from corbel.api.v1.endpoints import (
+    ai,
     auth,
     datasets,
     health,
@@ -24,3 +25,4 @@ api_router.include_router(ontology.router, tags=["Ontology Engine & Semantic Dis
 api_router.include_router(query.router, tags=["Structured Querying & Early AI Gateway"])
 api_router.include_router(process.router, tags=["Process Intelligence & Event Mining"])
 api_router.include_router(monitors.router, tags=["Adaptive Monitors & Exception Detection"])
+api_router.include_router(ai.router, tags=["AI Infrastructure & Bounded State Machines"])

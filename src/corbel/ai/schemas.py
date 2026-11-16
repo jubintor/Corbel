@@ -1,9 +1,17 @@
-"""Pydantic schemas for AI Gateway requests, responses, and token accounting."""
+"""Pydantic schemas for AI Gateway requests, responses, token accounting, and Phase 8 AI infrastructure."""
 
+import uuid
+from datetime import datetime
 from enum import Enum
 from typing import Any
 
-from pydantic import BaseModel, Field
+from pydantic import BaseModel, ConfigDict, Field
+
+from corbel.ai.models import (
+    PromptLifecycleState,
+    TaskType,
+    WorkflowType,
+)
 
 
 class ModelProviderType(str, Enum):
@@ -15,10 +23,11 @@ class ModelProviderType(str, Enum):
 
 
 class TokenUsage(BaseModel):
-    """Token consumption metrics for an AI model invocation."""
+    """Token consumption metrics for an AI model invocation, including provider-native prompt caching."""
 
     prompt_tokens: int = Field(default=0, ge=0, description="Input prompt tokens consumed")
     completion_tokens: int = Field(default=0, ge=0, description="Completion tokens produced")
+    cached_tokens: int = Field(default=0, ge=0, description="Cached prompt tokens leveraged (Level 1 caching)")
     total_tokens: int = Field(default=0, ge=0, description="Total tokens consumed")
 
 
@@ -47,3 +56,293 @@ class ModelResponse(BaseModel):
     )
     token_usage: TokenUsage = Field(default_factory=TokenUsage, description="Token consumption metrics")
     latency_ms: float = Field(default=0.0, ge=0.0, description="Total execution time in milliseconds")
+
+
+# -----------------------------------------------------------------------------
+# Phase 8: Task & Workflow Schemas
+# -----------------------------------------------------------------------------
+
+
+class TaskCreate(BaseModel):
+    """Request payload to create and schedule a durable background task."""
+
+    task_type: TaskType = Field(description="Category of background work to perform")
+    input_data: dict[str, Any] | None = Field(
+        default=None, description="Optional input payload or configuration for the task"
+    )
+    max_retries: int = Field(default=3, ge=0, le=10, description="Maximum retry attempts on transient failure")
+
+
+class TaskResponse(BaseModel):
+    """Response model for a durable background task execution."""
+
+    model_config = ConfigDict(from_attributes=True)
+
+    id: uuid.UUID
+    project_id: uuid.UUID
+    task_type: str
+    status: str
+    worker_id: str | None = None
+    lease_expires_at: datetime | None = None
+    last_heartbeat_at: datetime | None = None
+    lease_generation: int = 0
+    retry_count: int
+    max_retries: int
+    checkpoint_data_json: dict[str, Any] | None = None
+    cancellation_requested: bool
+    started_at: datetime | None = None
+    ended_at: datetime | None = None
+    error_diagnostics_json: dict[str, Any] | None = None
+    created_at: datetime
+    updated_at: datetime
+
+
+class WorkflowRunRequest(BaseModel):
+    """Request payload to execute a bounded state machine workflow."""
+
+    workflow_type: WorkflowType = Field(description="Type of state machine workflow to execute")
+    input_parameters: dict[str, Any] = Field(description="Input parameters and initial context for the workflow")
+    max_steps: int = Field(default=8, ge=1, le=20, description="Hard bound on state machine iteration steps")
+    token_budget: int = Field(default=50000, ge=100, le=500000, description="Maximum token consumption limit")
+    cost_budget_usd: float = Field(default=5.0, ge=0.01, le=100.0, description="Maximum expenditure budget in USD")
+
+
+class WorkflowExecutionResponse(BaseModel):
+    """Response model for an analytical state machine execution."""
+
+    model_config = ConfigDict(from_attributes=True)
+
+    id: uuid.UUID
+    project_id: uuid.UUID
+    task_execution_id: uuid.UUID | None = None
+    workflow_type: str
+    workflow_version: str
+    status: str
+    current_state: str
+    step_count: int
+    max_steps: int
+    token_budget: int
+    cost_budget_usd: float
+    input_parameters_json: dict[str, Any] | None = None
+    state_data_json: dict[str, Any] | None = None
+    result_data_json: dict[str, Any] | None = None
+    parent_execution_id: uuid.UUID | None = None
+    started_at: datetime | None = None
+    ended_at: datetime | None = None
+    created_at: datetime
+    updated_at: datetime
+
+
+# -----------------------------------------------------------------------------
+# Phase 8: Prompt Lifecycle Schemas
+# -----------------------------------------------------------------------------
+
+
+class PromptVersionCreate(BaseModel):
+    """Payload to create an immutable version iteration of a prompt definition."""
+
+    version_tag: str = Field(description="Semantic version tag (e.g., '1.0.0')")
+    template_text: str = Field(min_length=10, description="Prompt template text with optional {variables}")
+    model_compatibility: str = Field(default="claude-3-5-sonnet", description="Target model compatibility")
+    token_budget_input: int = Field(default=4096, ge=1, le=100000)
+    token_budget_output: int = Field(default=1024, ge=1, le=16384)
+    input_schema_json: dict[str, Any] | None = Field(default=None, description="Pydantic schema dict for input")
+    output_schema_json: dict[str, Any] | None = Field(default=None, description="Pydantic schema dict for output")
+
+
+class PromptVersionResponse(BaseModel):
+    """Response model for an immutable prompt version."""
+
+    model_config = ConfigDict(from_attributes=True)
+
+    id: uuid.UUID
+    prompt_definition_id: uuid.UUID
+    version_tag: str
+    lifecycle_state: str
+    model_compatibility: str
+    token_budget_input: int
+    token_budget_output: int
+    template_text: str
+    input_schema_json: dict[str, Any] | None = None
+    output_schema_json: dict[str, Any] | None = None
+    created_by: uuid.UUID | None = None
+    approved_by: uuid.UUID | None = None
+    approved_at: datetime | None = None
+    created_at: datetime
+
+
+class PromptDefinitionCreate(BaseModel):
+    """Payload to create a logical prompt definition asset."""
+
+    name: str = Field(min_length=2, max_length=128, description="Unique prompt asset name")
+    workflow_association: str = Field(description="Target workflow (e.g. 'DATA_DISCOVERY', 'INVESTIGATION')")
+    description: str | None = Field(default=None, max_length=1024)
+    is_system: bool = Field(default=False, description="Whether this is a platform-wide system baseline")
+    initial_version: PromptVersionCreate | None = Field(default=None, description="Optional initial prompt version")
+
+
+class PromptDefinitionResponse(BaseModel):
+    """Response model for a logical prompt definition asset."""
+
+    model_config = ConfigDict(from_attributes=True)
+
+    id: uuid.UUID
+    organization_id: uuid.UUID | None = None
+    is_system: bool
+    name: str
+    workflow_association: str
+    description: str | None = None
+    owner_user_id: uuid.UUID | None = None
+    created_at: datetime
+    updated_at: datetime
+    versions: list[PromptVersionResponse] = Field(default_factory=list)
+
+
+class PromptLifecycleTransitionRequest(BaseModel):
+    """Payload to transition a prompt version through its formal lifecycle."""
+
+    target_state: PromptLifecycleState = Field(description="Target lifecycle state")
+    rationale: str | None = Field(default=None, max_length=1024, description="Justification or review notes")
+
+
+class PromptRollbackRequest(BaseModel):
+    """Payload to restore production prompt deployment reference to a prior immutable version."""
+
+    target_version_tag: str = Field(description="Previously approved version tag to restore as active DEPLOY")
+    rationale: str | None = Field(default=None, max_length=1024, description="Rollback reason or regression note")
+
+
+# -----------------------------------------------------------------------------
+# Phase 8: AI Economics & Cost Attribution Schemas
+# -----------------------------------------------------------------------------
+
+
+class CostRecordResponse(BaseModel):
+    """Granular financial accounting record for an individual model invocation."""
+
+    model_config = ConfigDict(from_attributes=True)
+
+    id: uuid.UUID
+    model_invocation_id: uuid.UUID
+    task_execution_id: uuid.UUID | None = None
+    organization_id: uuid.UUID
+    project_id: uuid.UUID
+    use_case: str
+    workflow_name: str
+    agent_name: str | None = None
+    cost_usd: float
+    model_call_outcome: str
+    workflow_outcome: str
+    task_outcome: str
+    pricing_tier_snapshot_json: dict[str, Any] | None = None
+    is_estimated: bool
+    timestamp: datetime
+
+
+class CostSummaryResponse(BaseModel):
+    """Aggregated financial and token spend report."""
+
+    total_cost_usd: float
+    total_tokens: int
+    total_cached_tokens: int
+    invocations_count: int
+    successful_tasks_count: int
+    cost_per_successful_task: float
+    breakdown_by_workflow: dict[str, float]
+    breakdown_by_model: dict[str, float]
+
+
+# -----------------------------------------------------------------------------
+# Phase 8: Evaluation & Regression Framework Schemas
+# -----------------------------------------------------------------------------
+
+
+class EvaluationDatasetCreate(BaseModel):
+    """Payload to create an AI evaluation regression benchmark dataset."""
+
+    name: str = Field(min_length=2, max_length=128)
+    version: str = Field(default="1.0.0")
+    domain: str = Field(default="procure-to-pay")
+    test_cases: list[dict[str, Any]] = Field(min_length=1, description="List of test cases with expected outputs")
+    is_system: bool = Field(default=False)
+
+
+class EvaluationDatasetResponse(BaseModel):
+    """Response model for an evaluation benchmark dataset."""
+
+    model_config = ConfigDict(from_attributes=True)
+
+    id: uuid.UUID
+    organization_id: uuid.UUID | None = None
+    is_system: bool
+    name: str
+    version: str
+    domain: str
+    test_cases_json: list[dict[str, Any]]
+    created_at: datetime
+
+
+class EvaluationRunRequest(BaseModel):
+    """Payload to execute an automated evaluation benchmark suite."""
+
+    evaluation_dataset_id: uuid.UUID
+    target_prompt_version_id: uuid.UUID | None = None
+    target_model_name: str = Field(default="claude-3-5-sonnet")
+
+
+class EvaluationResultResponse(BaseModel):
+    """Individual test case score within an evaluation benchmark run."""
+
+    model_config = ConfigDict(from_attributes=True)
+
+    id: uuid.UUID
+    evaluation_run_id: uuid.UUID
+    test_case_id: str
+    metric_name: str
+    score: float
+    passed: bool
+    diagnostics_json: dict[str, Any] | None = None
+    created_at: datetime
+
+
+class EvaluationRunResponse(BaseModel):
+    """Response model for an evaluation benchmark suite run."""
+
+    model_config = ConfigDict(from_attributes=True)
+
+    id: uuid.UUID
+    organization_id: uuid.UUID
+    evaluation_dataset_id: uuid.UUID
+    target_prompt_version_id: uuid.UUID | None = None
+    target_model_name: str
+    status: str
+    started_at: datetime | None = None
+    ended_at: datetime | None = None
+    summary_metrics_json: dict[str, Any] | None = None
+    created_at: datetime
+    results: list[EvaluationResultResponse] = Field(default_factory=list)
+
+
+# -----------------------------------------------------------------------------
+# Phase 8: Tool Registry Schemas
+# -----------------------------------------------------------------------------
+
+
+class ToolParameter(BaseModel):
+    """Specification of a parameter accepted by a registered tool."""
+
+    name: str
+    type: str
+    description: str
+    required: bool = True
+    default: Any = None
+
+
+class ToolDefinition(BaseModel):
+    """Metadata schema defining a registered tool available to bounded state machines."""
+
+    name: str
+    description: str
+    parameters: list[ToolParameter]
+    is_read_only: bool = True
+    schema_dict: dict[str, Any]

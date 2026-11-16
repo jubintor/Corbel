@@ -34,6 +34,17 @@ from corbel.domains.monitors.models import (  # noqa: F401 - Register Phase 7 mo
     Monitor,
     MonitorEvaluation,
 )
+from corbel.ai.models import (  # noqa: F401 - Register Phase 8 AI infrastructure models
+    CostRecord,
+    EvaluationDataset,
+    EvaluationResult,
+    EvaluationRun,
+    ModelInvocation,
+    PromptDefinition,
+    PromptVersion,
+    TaskExecution,
+    WorkflowExecution,
+)
 from corbel.domains.tenancy.models import (  # noqa: F401 - Register Phase 2 tenancy models
     Organization,
     OrganizationMember,
