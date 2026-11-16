@@ -28,6 +28,12 @@ from corbel.domains.process_intelligence.models import (  # noqa: F401 - Registe
     ProcessEvent,
     ProcessEventDatasetVersion,
 )
+from corbel.domains.monitors.models import (  # noqa: F401 - Register Phase 7 models
+    BusinessRule,
+    Finding,
+    Monitor,
+    MonitorEvaluation,
+)
 from corbel.domains.tenancy.models import (  # noqa: F401 - Register Phase 2 tenancy models
     Organization,
     OrganizationMember,
