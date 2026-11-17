@@ -63,6 +63,11 @@ from corbel.domains.tenancy.models import (  # noqa: F401 - Register Phase 2 ten
     ProjectMember,
     User,
 )
+from corbel.domains.use_case_architect.models import (  # noqa: F401 - Register Phase 11 models
+    UseCase,
+    UseCaseMessage,
+    UseCaseSpecificationVersion,
+)
 
 # this is the Alembic Config object, which provides
 # access to the values within the .ini file in use.

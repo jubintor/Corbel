@@ -28,6 +28,7 @@
 - [ADR-018: Alembic for Database Schema Migrations](#adr-018-alembic-for-database-schema-migrations)
 - [ADR-019: Multi-Layered AI Security, Prompt Injection Defense & Untrusted Content Handling](#adr-019-multi-layered-ai-security-prompt-injection-defense--untrusted-content-handling)
 - [ADR-020: Append-Only Audit Records and Audit Log Integrity](#adr-020-append-only-audit-records-and-audit-log-integrity)
+- [ADR-021: Use-Case Architect Bounded Discovery, Structured Specifications & Governance](#adr-021-use-case-architect-bounded-discovery-structured-specifications--governance)
 - [Architectural Backlog & Open Questions](#architectural-backlog--open-questions)
 
 ---
@@ -427,6 +428,22 @@
   - *Positive:* High audit defensibility and operational accountability; clear separation between active operational state and immutable historical evidence; satisfies enterprise data protection, privacy, and compliance requirements.
   - *Negative:* Requires disciplined database privilege configuration and migration role management; requires ongoing sanitization and hashing discipline in audit event dispatchers.
   - *Neutral:* PostgreSQL remains the authoritative audit store; no blockchain or complex external ledger dependencies are introduced.
+
+---
+
+### ADR-021: Use-Case Architect Bounded Discovery, Structured Specifications & Governance
+- **Status:** Accepted
+- **Context:** Translating unstructured business problem statements into technical platform configurations requires structured requirements gathering, technical justification, architectural evaluation, and governance. A generic unconstrained chat prompt risks open-ended interrogation, non-deterministic hallucinations, premature coupling to RAG or agents, and lack of versioned specifications.
+- **Decision:** Implement the **Use-Case Architect** as a governed, tenant-isolated capability adhering to:
+  1. **Bounded Discovery Dialogue:** Multi-turn conversational interaction with maximum 1-3 targeted clarifying questions per turn, avoiding lengthy questionnaires and allowing incomplete drafts to be saved at any stage.
+  2. **Fact vs. Assumption Separation:** Extracted requirements must strictly separate verified user-confirmed constraints from unverified AI assumptions.
+  3. **Justified Pattern Selection & Non-Forced AI:** Architecture recommendations must evaluate deterministic rules, SQL/relational querying, keyword search, document RAG, and bounded agentic workflows, choosing the simplest reliable pattern. Deterministic business logic (e.g., price variance math) is enforced over LLM approximations. Alternatives considered must be documented with explicit rejection rationale.
+  4. **Strict Schema-Validated Specification Objects:** Main output is a validated, version-controlled Pydantic schema (`UseCaseSpecification`) containing 22+ structured fields rather than free-form prose.
+  5. **Formal Approval Gates & Append-Only Versioning:** Revisions increment immutable version numbers (`(use_case_id, version)` unique constraint). Formal approval requires `PROJECT_LEAD` or `ORG_ADMIN` role and records the approving user and timestamp. All lifecycle events (`USE_CASE_CREATED`, `USE_CASE_DISCOVERY_TURN`, `SPECIFICATION_GENERATED`, `SPECIFICATION_APPROVED`) emit immutable Phase 10 audit logs.
+- **Consequences:**
+  - *Positive:* Provides a reliable bridge from operational problem statements to executable Corbel configurations; guarantees architectural discipline and prevents AI over-engineering; complete auditability of all design decisions.
+  - *Negative:* Requires maintaining structured schemas and version comparison diff logic across frontend and backend.
+  - *Neutral:* Reuses existing Phase 8 AI Gateway, Phase 9 P2P vertical slice, and Phase 10 native audit store without introducing new infrastructure.
 
 ---
 

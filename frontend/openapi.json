@@ -9377,6 +9377,986 @@
           }
         }
       }
+    },
+    "/api/v1/projects/{project_id}/use-cases": {
+      "post": {
+        "tags": [
+          "Use-Case Architect",
+          "Use-Case Architect"
+        ],
+        "summary": "Create Use Case",
+        "description": "Create a new business use case and initiate discovery.",
+        "operationId": "create_use_case_api_v1_projects__project_id__use_cases_post",
+        "security": [
+          {
+            "HTTPBearer": []
+          }
+        ],
+        "parameters": [
+          {
+            "name": "project_id",
+            "in": "path",
+            "required": true,
+            "schema": {
+              "type": "string",
+              "format": "uuid",
+              "title": "Project Id"
+            }
+          },
+          {
+            "name": "X-Organization-ID",
+            "in": "header",
+            "required": false,
+            "schema": {
+              "anyOf": [
+                {
+                  "type": "string"
+                },
+                {
+                  "type": "null"
+                }
+              ],
+              "title": "X-Organization-Id"
+            }
+          }
+        ],
+        "requestBody": {
+          "required": true,
+          "content": {
+            "application/json": {
+              "schema": {
+                "$ref": "#/components/schemas/UseCaseCreateRequest"
+              }
+            }
+          }
+        },
+        "responses": {
+          "201": {
+            "description": "Successful Response",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/UseCaseResponse"
+                }
+              }
+            }
+          },
+          "500": {
+            "description": "Standardized platform error response",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ErrorResponse"
+                }
+              }
+            }
+          },
+          "422": {
+            "description": "Validation Error",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/HTTPValidationError"
+                }
+              }
+            }
+          }
+        }
+      },
+      "get": {
+        "tags": [
+          "Use-Case Architect",
+          "Use-Case Architect"
+        ],
+        "summary": "List Use Cases",
+        "description": "List all use cases in the project.",
+        "operationId": "list_use_cases_api_v1_projects__project_id__use_cases_get",
+        "security": [
+          {
+            "HTTPBearer": []
+          }
+        ],
+        "parameters": [
+          {
+            "name": "project_id",
+            "in": "path",
+            "required": true,
+            "schema": {
+              "type": "string",
+              "format": "uuid",
+              "title": "Project Id"
+            }
+          },
+          {
+            "name": "X-Organization-ID",
+            "in": "header",
+            "required": false,
+            "schema": {
+              "anyOf": [
+                {
+                  "type": "string"
+                },
+                {
+                  "type": "null"
+                }
+              ],
+              "title": "X-Organization-Id"
+            }
+          }
+        ],
+        "responses": {
+          "200": {
+            "description": "Successful Response",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "type": "array",
+                  "items": {
+                    "$ref": "#/components/schemas/UseCaseResponse"
+                  },
+                  "title": "Response List Use Cases Api V1 Projects  Project Id  Use Cases Get"
+                }
+              }
+            }
+          },
+          "500": {
+            "description": "Standardized platform error response",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ErrorResponse"
+                }
+              }
+            }
+          },
+          "422": {
+            "description": "Validation Error",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/HTTPValidationError"
+                }
+              }
+            }
+          }
+        }
+      }
+    },
+    "/api/v1/projects/{project_id}/use-cases/{use_case_id}": {
+      "get": {
+        "tags": [
+          "Use-Case Architect",
+          "Use-Case Architect"
+        ],
+        "summary": "Get Use Case",
+        "description": "Get complete details, messages, and latest specification for a use case.",
+        "operationId": "get_use_case_api_v1_projects__project_id__use_cases__use_case_id__get",
+        "security": [
+          {
+            "HTTPBearer": []
+          }
+        ],
+        "parameters": [
+          {
+            "name": "project_id",
+            "in": "path",
+            "required": true,
+            "schema": {
+              "type": "string",
+              "format": "uuid",
+              "title": "Project Id"
+            }
+          },
+          {
+            "name": "use_case_id",
+            "in": "path",
+            "required": true,
+            "schema": {
+              "type": "string",
+              "format": "uuid",
+              "title": "Use Case Id"
+            }
+          },
+          {
+            "name": "X-Organization-ID",
+            "in": "header",
+            "required": false,
+            "schema": {
+              "anyOf": [
+                {
+                  "type": "string"
+                },
+                {
+                  "type": "null"
+                }
+              ],
+              "title": "X-Organization-Id"
+            }
+          }
+        ],
+        "responses": {
+          "200": {
+            "description": "Successful Response",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/UseCaseDetailResponse"
+                }
+              }
+            }
+          },
+          "500": {
+            "description": "Standardized platform error response",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ErrorResponse"
+                }
+              }
+            }
+          },
+          "422": {
+            "description": "Validation Error",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/HTTPValidationError"
+                }
+              }
+            }
+          }
+        }
+      },
+      "put": {
+        "tags": [
+          "Use-Case Architect",
+          "Use-Case Architect"
+        ],
+        "summary": "Update Use Case",
+        "description": "Update title or description of an unapproved use case.",
+        "operationId": "update_use_case_api_v1_projects__project_id__use_cases__use_case_id__put",
+        "security": [
+          {
+            "HTTPBearer": []
+          }
+        ],
+        "parameters": [
+          {
+            "name": "project_id",
+            "in": "path",
+            "required": true,
+            "schema": {
+              "type": "string",
+              "format": "uuid",
+              "title": "Project Id"
+            }
+          },
+          {
+            "name": "use_case_id",
+            "in": "path",
+            "required": true,
+            "schema": {
+              "type": "string",
+              "format": "uuid",
+              "title": "Use Case Id"
+            }
+          },
+          {
+            "name": "X-Organization-ID",
+            "in": "header",
+            "required": false,
+            "schema": {
+              "anyOf": [
+                {
+                  "type": "string"
+                },
+                {
+                  "type": "null"
+                }
+              ],
+              "title": "X-Organization-Id"
+            }
+          }
+        ],
+        "requestBody": {
+          "required": true,
+          "content": {
+            "application/json": {
+              "schema": {
+                "$ref": "#/components/schemas/UseCaseUpdateRequest"
+              }
+            }
+          }
+        },
+        "responses": {
+          "200": {
+            "description": "Successful Response",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/UseCaseResponse"
+                }
+              }
+            }
+          },
+          "500": {
+            "description": "Standardized platform error response",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ErrorResponse"
+                }
+              }
+            }
+          },
+          "422": {
+            "description": "Validation Error",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/HTTPValidationError"
+                }
+              }
+            }
+          }
+        }
+      },
+      "delete": {
+        "tags": [
+          "Use-Case Architect",
+          "Use-Case Architect"
+        ],
+        "summary": "Delete Use Case",
+        "description": "Delete a use case. Requires Lead or Org Admin.",
+        "operationId": "delete_use_case_api_v1_projects__project_id__use_cases__use_case_id__delete",
+        "security": [
+          {
+            "HTTPBearer": []
+          }
+        ],
+        "parameters": [
+          {
+            "name": "project_id",
+            "in": "path",
+            "required": true,
+            "schema": {
+              "type": "string",
+              "format": "uuid",
+              "title": "Project Id"
+            }
+          },
+          {
+            "name": "use_case_id",
+            "in": "path",
+            "required": true,
+            "schema": {
+              "type": "string",
+              "format": "uuid",
+              "title": "Use Case Id"
+            }
+          },
+          {
+            "name": "X-Organization-ID",
+            "in": "header",
+            "required": false,
+            "schema": {
+              "anyOf": [
+                {
+                  "type": "string"
+                },
+                {
+                  "type": "null"
+                }
+              ],
+              "title": "X-Organization-Id"
+            }
+          }
+        ],
+        "responses": {
+          "204": {
+            "description": "Successful Response"
+          },
+          "500": {
+            "description": "Standardized platform error response",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ErrorResponse"
+                }
+              }
+            }
+          },
+          "422": {
+            "description": "Validation Error",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/HTTPValidationError"
+                }
+              }
+            }
+          }
+        }
+      }
+    },
+    "/api/v1/projects/{project_id}/use-cases/{use_case_id}/messages": {
+      "post": {
+        "tags": [
+          "Use-Case Architect",
+          "Use-Case Architect"
+        ],
+        "summary": "Add Discovery Message",
+        "description": "Post a user response in the discovery dialogue and execute bounded turn.",
+        "operationId": "add_discovery_message_api_v1_projects__project_id__use_cases__use_case_id__messages_post",
+        "security": [
+          {
+            "HTTPBearer": []
+          }
+        ],
+        "parameters": [
+          {
+            "name": "project_id",
+            "in": "path",
+            "required": true,
+            "schema": {
+              "type": "string",
+              "format": "uuid",
+              "title": "Project Id"
+            }
+          },
+          {
+            "name": "use_case_id",
+            "in": "path",
+            "required": true,
+            "schema": {
+              "type": "string",
+              "format": "uuid",
+              "title": "Use Case Id"
+            }
+          },
+          {
+            "name": "X-Organization-ID",
+            "in": "header",
+            "required": false,
+            "schema": {
+              "anyOf": [
+                {
+                  "type": "string"
+                },
+                {
+                  "type": "null"
+                }
+              ],
+              "title": "X-Organization-Id"
+            }
+          }
+        ],
+        "requestBody": {
+          "required": true,
+          "content": {
+            "application/json": {
+              "schema": {
+                "$ref": "#/components/schemas/UseCaseMessageCreateRequest"
+              }
+            }
+          }
+        },
+        "responses": {
+          "200": {
+            "description": "Successful Response",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/DiscoveryTurnResponse"
+                }
+              }
+            }
+          },
+          "500": {
+            "description": "Standardized platform error response",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ErrorResponse"
+                }
+              }
+            }
+          },
+          "422": {
+            "description": "Validation Error",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/HTTPValidationError"
+                }
+              }
+            }
+          }
+        }
+      }
+    },
+    "/api/v1/projects/{project_id}/use-cases/{use_case_id}/specifications/generate": {
+      "post": {
+        "tags": [
+          "Use-Case Architect",
+          "Use-Case Architect"
+        ],
+        "summary": "Generate Specification",
+        "description": "Generate a structured, versioned specification based on discovery requirements.",
+        "operationId": "generate_specification_api_v1_projects__project_id__use_cases__use_case_id__specifications_generate_post",
+        "security": [
+          {
+            "HTTPBearer": []
+          }
+        ],
+        "parameters": [
+          {
+            "name": "project_id",
+            "in": "path",
+            "required": true,
+            "schema": {
+              "type": "string",
+              "format": "uuid",
+              "title": "Project Id"
+            }
+          },
+          {
+            "name": "use_case_id",
+            "in": "path",
+            "required": true,
+            "schema": {
+              "type": "string",
+              "format": "uuid",
+              "title": "Use Case Id"
+            }
+          },
+          {
+            "name": "X-Organization-ID",
+            "in": "header",
+            "required": false,
+            "schema": {
+              "anyOf": [
+                {
+                  "type": "string"
+                },
+                {
+                  "type": "null"
+                }
+              ],
+              "title": "X-Organization-Id"
+            }
+          }
+        ],
+        "responses": {
+          "201": {
+            "description": "Successful Response",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/UseCaseSpecification"
+                }
+              }
+            }
+          },
+          "500": {
+            "description": "Standardized platform error response",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ErrorResponse"
+                }
+              }
+            }
+          },
+          "422": {
+            "description": "Validation Error",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/HTTPValidationError"
+                }
+              }
+            }
+          }
+        }
+      }
+    },
+    "/api/v1/projects/{project_id}/use-cases/{use_case_id}/specifications": {
+      "get": {
+        "tags": [
+          "Use-Case Architect",
+          "Use-Case Architect"
+        ],
+        "summary": "List Specifications",
+        "description": "List all specification revisions for a use case.",
+        "operationId": "list_specifications_api_v1_projects__project_id__use_cases__use_case_id__specifications_get",
+        "security": [
+          {
+            "HTTPBearer": []
+          }
+        ],
+        "parameters": [
+          {
+            "name": "project_id",
+            "in": "path",
+            "required": true,
+            "schema": {
+              "type": "string",
+              "format": "uuid",
+              "title": "Project Id"
+            }
+          },
+          {
+            "name": "use_case_id",
+            "in": "path",
+            "required": true,
+            "schema": {
+              "type": "string",
+              "format": "uuid",
+              "title": "Use Case Id"
+            }
+          },
+          {
+            "name": "X-Organization-ID",
+            "in": "header",
+            "required": false,
+            "schema": {
+              "anyOf": [
+                {
+                  "type": "string"
+                },
+                {
+                  "type": "null"
+                }
+              ],
+              "title": "X-Organization-Id"
+            }
+          }
+        ],
+        "responses": {
+          "200": {
+            "description": "Successful Response",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "type": "array",
+                  "items": {
+                    "$ref": "#/components/schemas/SpecificationVersionSummary"
+                  },
+                  "title": "Response List Specifications Api V1 Projects  Project Id  Use Cases  Use Case Id  Specifications Get"
+                }
+              }
+            }
+          },
+          "500": {
+            "description": "Standardized platform error response",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ErrorResponse"
+                }
+              }
+            }
+          },
+          "422": {
+            "description": "Validation Error",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/HTTPValidationError"
+                }
+              }
+            }
+          }
+        }
+      }
+    },
+    "/api/v1/projects/{project_id}/use-cases/{use_case_id}/specifications/compare": {
+      "get": {
+        "tags": [
+          "Use-Case Architect",
+          "Use-Case Architect"
+        ],
+        "summary": "Compare Specifications",
+        "description": "Compare two specification revisions and return field diffs.",
+        "operationId": "compare_specifications_api_v1_projects__project_id__use_cases__use_case_id__specifications_compare_get",
+        "security": [
+          {
+            "HTTPBearer": []
+          }
+        ],
+        "parameters": [
+          {
+            "name": "project_id",
+            "in": "path",
+            "required": true,
+            "schema": {
+              "type": "string",
+              "format": "uuid",
+              "title": "Project Id"
+            }
+          },
+          {
+            "name": "use_case_id",
+            "in": "path",
+            "required": true,
+            "schema": {
+              "type": "string",
+              "format": "uuid",
+              "title": "Use Case Id"
+            }
+          },
+          {
+            "name": "v1",
+            "in": "query",
+            "required": true,
+            "schema": {
+              "type": "integer",
+              "minimum": 1,
+              "title": "V1"
+            }
+          },
+          {
+            "name": "v2",
+            "in": "query",
+            "required": true,
+            "schema": {
+              "type": "integer",
+              "minimum": 1,
+              "title": "V2"
+            }
+          },
+          {
+            "name": "X-Organization-ID",
+            "in": "header",
+            "required": false,
+            "schema": {
+              "anyOf": [
+                {
+                  "type": "string"
+                },
+                {
+                  "type": "null"
+                }
+              ],
+              "title": "X-Organization-Id"
+            }
+          }
+        ],
+        "responses": {
+          "200": {
+            "description": "Successful Response",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/SpecificationDiffResponse"
+                }
+              }
+            }
+          },
+          "500": {
+            "description": "Standardized platform error response",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ErrorResponse"
+                }
+              }
+            }
+          },
+          "422": {
+            "description": "Validation Error",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/HTTPValidationError"
+                }
+              }
+            }
+          }
+        }
+      }
+    },
+    "/api/v1/projects/{project_id}/use-cases/{use_case_id}/specifications/{version}": {
+      "get": {
+        "tags": [
+          "Use-Case Architect",
+          "Use-Case Architect"
+        ],
+        "summary": "Get Specification Version",
+        "description": "Retrieve a specific version of a specification.",
+        "operationId": "get_specification_version_api_v1_projects__project_id__use_cases__use_case_id__specifications__version__get",
+        "security": [
+          {
+            "HTTPBearer": []
+          }
+        ],
+        "parameters": [
+          {
+            "name": "project_id",
+            "in": "path",
+            "required": true,
+            "schema": {
+              "type": "string",
+              "format": "uuid",
+              "title": "Project Id"
+            }
+          },
+          {
+            "name": "use_case_id",
+            "in": "path",
+            "required": true,
+            "schema": {
+              "type": "string",
+              "format": "uuid",
+              "title": "Use Case Id"
+            }
+          },
+          {
+            "name": "version",
+            "in": "path",
+            "required": true,
+            "schema": {
+              "type": "integer",
+              "title": "Version"
+            }
+          },
+          {
+            "name": "X-Organization-ID",
+            "in": "header",
+            "required": false,
+            "schema": {
+              "anyOf": [
+                {
+                  "type": "string"
+                },
+                {
+                  "type": "null"
+                }
+              ],
+              "title": "X-Organization-Id"
+            }
+          }
+        ],
+        "responses": {
+          "200": {
+            "description": "Successful Response",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/UseCaseSpecification"
+                }
+              }
+            }
+          },
+          "500": {
+            "description": "Standardized platform error response",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ErrorResponse"
+                }
+              }
+            }
+          },
+          "422": {
+            "description": "Validation Error",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/HTTPValidationError"
+                }
+              }
+            }
+          }
+        }
+      }
+    },
+    "/api/v1/projects/{project_id}/use-cases/{use_case_id}/specifications/approve": {
+      "post": {
+        "tags": [
+          "Use-Case Architect",
+          "Use-Case Architect"
+        ],
+        "summary": "Approve Specification",
+        "description": "Approve the current specification design. Requires Project Lead or Org Admin.",
+        "operationId": "approve_specification_api_v1_projects__project_id__use_cases__use_case_id__specifications_approve_post",
+        "security": [
+          {
+            "HTTPBearer": []
+          }
+        ],
+        "parameters": [
+          {
+            "name": "project_id",
+            "in": "path",
+            "required": true,
+            "schema": {
+              "type": "string",
+              "format": "uuid",
+              "title": "Project Id"
+            }
+          },
+          {
+            "name": "use_case_id",
+            "in": "path",
+            "required": true,
+            "schema": {
+              "type": "string",
+              "format": "uuid",
+              "title": "Use Case Id"
+            }
+          },
+          {
+            "name": "X-Organization-ID",
+            "in": "header",
+            "required": false,
+            "schema": {
+              "anyOf": [
+                {
+                  "type": "string"
+                },
+                {
+                  "type": "null"
+                }
+              ],
+              "title": "X-Organization-Id"
+            }
+          }
+        ],
+        "responses": {
+          "200": {
+            "description": "Successful Response",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/UseCaseResponse"
+                }
+              }
+            }
+          },
+          "500": {
+            "description": "Standardized platform error response",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ErrorResponse"
+                }
+              }
+            }
+          },
+          "422": {
+            "description": "Validation Error",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/HTTPValidationError"
+                }
+              }
+            }
+          }
+        }
+      }
     }
   },
   "components": {
@@ -9741,6 +10721,86 @@
         ],
         "title": "ApprovalStatus",
         "description": "Human decision state for an action approval gate."
+      },
+      "ArchitectureAlternative": {
+        "properties": {
+          "approach": {
+            "type": "string",
+            "title": "Approach"
+          },
+          "pros": {
+            "items": {
+              "type": "string"
+            },
+            "type": "array",
+            "title": "Pros"
+          },
+          "cons": {
+            "items": {
+              "type": "string"
+            },
+            "type": "array",
+            "title": "Cons"
+          },
+          "rejection_reason": {
+            "type": "string",
+            "title": "Rejection Reason"
+          }
+        },
+        "type": "object",
+        "required": [
+          "approach",
+          "rejection_reason"
+        ],
+        "title": "ArchitectureAlternative",
+        "description": "An alternative technical approach considered and evaluated."
+      },
+      "ArchitectureRationale": {
+        "properties": {
+          "recommended_pattern": {
+            "type": "string",
+            "title": "Recommended Pattern"
+          },
+          "justification": {
+            "type": "string",
+            "title": "Justification"
+          },
+          "deterministic_components": {
+            "items": {
+              "type": "string"
+            },
+            "type": "array",
+            "title": "Deterministic Components"
+          },
+          "retrieval_components": {
+            "items": {
+              "type": "string"
+            },
+            "type": "array",
+            "title": "Retrieval Components"
+          },
+          "agentic_components": {
+            "items": {
+              "type": "string"
+            },
+            "type": "array",
+            "title": "Agentic Components"
+          },
+          "alternatives_considered": {
+            "items": {
+              "$ref": "#/components/schemas/ArchitectureAlternative"
+            },
+            "type": "array",
+            "title": "Alternatives Considered"
+          }
+        },
+        "type": "object",
+        "required": [
+          "recommended_pattern",
+          "justification"
+        ],
+        "title": "ArchitectureRationale",
+        "description": "Deep technical justification for the recommended solution pattern."
       },
       "AuditEventListResponse": {
         "properties": {
@@ -11323,6 +12383,83 @@
         "title": "DateTimeStats",
         "description": "Statistical summary for date and datetime columns."
       },
+      "DiscoveryMessageItem": {
+        "properties": {
+          "id": {
+            "type": "string",
+            "format": "uuid",
+            "title": "Id"
+          },
+          "sender_role": {
+            "type": "string",
+            "title": "Sender Role"
+          },
+          "message_text": {
+            "type": "string",
+            "title": "Message Text"
+          },
+          "extracted_requirements": {
+            "anyOf": [
+              {
+                "$ref": "#/components/schemas/ExtractedRequirements"
+              },
+              {
+                "type": "null"
+              }
+            ]
+          },
+          "clarification_questions": {
+            "anyOf": [
+              {
+                "items": {
+                  "type": "string"
+                },
+                "type": "array"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "title": "Clarification Questions"
+          },
+          "created_at": {
+            "type": "string",
+            "format": "date-time",
+            "title": "Created At"
+          }
+        },
+        "type": "object",
+        "required": [
+          "id",
+          "sender_role",
+          "message_text",
+          "created_at"
+        ],
+        "title": "DiscoveryMessageItem",
+        "description": "A single discovery message item."
+      },
+      "DiscoveryTurnResponse": {
+        "properties": {
+          "user_message": {
+            "$ref": "#/components/schemas/DiscoveryMessageItem"
+          },
+          "assistant_message": {
+            "$ref": "#/components/schemas/DiscoveryMessageItem"
+          },
+          "can_generate_specification": {
+            "type": "boolean",
+            "title": "Can Generate Specification"
+          }
+        },
+        "type": "object",
+        "required": [
+          "user_message",
+          "assistant_message",
+          "can_generate_specification"
+        ],
+        "title": "DiscoveryTurnResponse",
+        "description": "Response returned after processing a discovery turn."
+      },
       "DocumentCreateRequest": {
         "properties": {
           "title": {
@@ -11630,6 +12767,34 @@
         ],
         "title": "ErrorResponse",
         "description": "Standardized API error response format across all Corbel endpoints."
+      },
+      "EstimatesAndAssumptions": {
+        "properties": {
+          "delivery_estimates": {
+            "items": {
+              "type": "string"
+            },
+            "type": "array",
+            "title": "Delivery Estimates"
+          },
+          "verified_capabilities": {
+            "items": {
+              "type": "string"
+            },
+            "type": "array",
+            "title": "Verified Capabilities"
+          },
+          "unverified_assumptions": {
+            "items": {
+              "type": "string"
+            },
+            "type": "array",
+            "title": "Unverified Assumptions"
+          }
+        },
+        "type": "object",
+        "title": "EstimatesAndAssumptions",
+        "description": "Estimates and explicitly separated assumptions vs verified capabilities."
       },
       "EvaluationDatasetCreate": {
         "properties": {
@@ -12072,6 +13237,102 @@
         "title": "ExecutionStatus",
         "description": "Dispatch outcome for a target-system adapter execution."
       },
+      "ExtractedRequirements": {
+        "properties": {
+          "business_objective": {
+            "anyOf": [
+              {
+                "type": "string"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "title": "Business Objective"
+          },
+          "expected_outcomes": {
+            "items": {
+              "type": "string"
+            },
+            "type": "array",
+            "title": "Expected Outcomes"
+          },
+          "stakeholders": {
+            "items": {
+              "type": "string"
+            },
+            "type": "array",
+            "title": "Stakeholders"
+          },
+          "workflows": {
+            "items": {
+              "type": "string"
+            },
+            "type": "array",
+            "title": "Workflows"
+          },
+          "inputs": {
+            "items": {
+              "type": "string"
+            },
+            "type": "array",
+            "title": "Inputs"
+          },
+          "outputs": {
+            "items": {
+              "type": "string"
+            },
+            "type": "array",
+            "title": "Outputs"
+          },
+          "source_systems": {
+            "items": {
+              "type": "string"
+            },
+            "type": "array",
+            "title": "Source Systems"
+          },
+          "data_sensitivity": {
+            "anyOf": [
+              {
+                "type": "string"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "title": "Data Sensitivity"
+          },
+          "freshness_latency": {
+            "anyOf": [
+              {
+                "type": "string"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "title": "Freshness Latency"
+          },
+          "confirmed_requirements": {
+            "items": {
+              "type": "string"
+            },
+            "type": "array",
+            "title": "Confirmed Requirements"
+          },
+          "unverified_assumptions": {
+            "items": {
+              "type": "string"
+            },
+            "type": "array",
+            "title": "Unverified Assumptions"
+          }
+        },
+        "type": "object",
+        "title": "ExtractedRequirements",
+        "description": "Structured extraction of user requirements and discovery state."
+      },
       "FindingResponse": {
         "properties": {
           "id": {
@@ -12331,6 +13592,91 @@
         },
         "type": "object",
         "title": "HTTPValidationError"
+      },
+      "ImplementationMilestone": {
+        "properties": {
+          "milestone_id": {
+            "type": "string",
+            "title": "Milestone Id"
+          },
+          "title": {
+            "type": "string",
+            "title": "Title"
+          },
+          "description": {
+            "type": "string",
+            "title": "Description"
+          },
+          "target_components": {
+            "items": {
+              "type": "string"
+            },
+            "type": "array",
+            "title": "Target Components"
+          },
+          "dependencies": {
+            "items": {
+              "type": "string"
+            },
+            "type": "array",
+            "title": "Dependencies"
+          },
+          "estimated_effort": {
+            "type": "string",
+            "title": "Estimated Effort"
+          },
+          "acceptance_criteria": {
+            "items": {
+              "type": "string"
+            },
+            "type": "array",
+            "title": "Acceptance Criteria"
+          }
+        },
+        "type": "object",
+        "required": [
+          "milestone_id",
+          "title",
+          "description",
+          "estimated_effort"
+        ],
+        "title": "ImplementationMilestone",
+        "description": "A structured delivery milestone in the implementation plan."
+      },
+      "InputsAndOutputs": {
+        "properties": {
+          "inputs": {
+            "items": {
+              "type": "string"
+            },
+            "type": "array",
+            "title": "Inputs"
+          },
+          "outputs": {
+            "items": {
+              "type": "string"
+            },
+            "type": "array",
+            "title": "Outputs"
+          },
+          "decisions": {
+            "items": {
+              "type": "string"
+            },
+            "type": "array",
+            "title": "Decisions"
+          },
+          "actions": {
+            "items": {
+              "type": "string"
+            },
+            "type": "array",
+            "title": "Actions"
+          }
+        },
+        "type": "object",
+        "title": "InputsAndOutputs",
+        "description": "Structured operational I/O definition."
       },
       "InvestigationCreateRequest": {
         "properties": {
@@ -16270,6 +17616,86 @@
         "title": "SourceType",
         "description": "Supported data source connector types."
       },
+      "SpecificationDiffResponse": {
+        "properties": {
+          "use_case_id": {
+            "type": "string",
+            "format": "uuid",
+            "title": "Use Case Id"
+          },
+          "v1": {
+            "type": "integer",
+            "title": "V1"
+          },
+          "v2": {
+            "type": "integer",
+            "title": "V2"
+          },
+          "differences": {
+            "additionalProperties": {
+              "additionalProperties": true,
+              "type": "object"
+            },
+            "type": "object",
+            "title": "Differences"
+          },
+          "summary": {
+            "type": "string",
+            "title": "Summary"
+          }
+        },
+        "type": "object",
+        "required": [
+          "use_case_id",
+          "v1",
+          "v2",
+          "differences",
+          "summary"
+        ],
+        "title": "SpecificationDiffResponse",
+        "description": "Structural diff between two specification revisions."
+      },
+      "SpecificationVersionSummary": {
+        "properties": {
+          "version": {
+            "type": "integer",
+            "title": "Version"
+          },
+          "created_by": {
+            "type": "string",
+            "format": "uuid",
+            "title": "Created By"
+          },
+          "created_at": {
+            "type": "string",
+            "format": "date-time",
+            "title": "Created At"
+          },
+          "title": {
+            "type": "string",
+            "title": "Title"
+          },
+          "proposed_architecture": {
+            "type": "string",
+            "title": "Proposed Architecture"
+          },
+          "risk_level": {
+            "type": "string",
+            "title": "Risk Level"
+          }
+        },
+        "type": "object",
+        "required": [
+          "version",
+          "created_by",
+          "created_at",
+          "title",
+          "proposed_architecture",
+          "risk_level"
+        ],
+        "title": "SpecificationVersionSummary",
+        "description": "Summary of a saved specification version."
+      },
       "StateMachineResult": {
         "properties": {
           "workflow_id": {
@@ -16760,6 +18186,30 @@
         "title": "TaskType",
         "description": "Operational categories of durable background tasks."
       },
+      "TechnicalRisk": {
+        "properties": {
+          "risk": {
+            "type": "string",
+            "title": "Risk"
+          },
+          "severity": {
+            "type": "string",
+            "title": "Severity"
+          },
+          "mitigation": {
+            "type": "string",
+            "title": "Mitigation"
+          }
+        },
+        "type": "object",
+        "required": [
+          "risk",
+          "severity",
+          "mitigation"
+        ],
+        "title": "TechnicalRisk",
+        "description": "An identified technical risk and its mitigation strategy."
+      },
       "TokenResponse": {
         "properties": {
           "access_token": {
@@ -16875,6 +18325,435 @@
         ],
         "title": "TraversalStep",
         "description": "One step in an ontology graph traversal."
+      },
+      "UseCaseCreateRequest": {
+        "properties": {
+          "title": {
+            "type": "string",
+            "maxLength": 255,
+            "minLength": 3,
+            "title": "Title"
+          },
+          "description": {
+            "type": "string",
+            "minLength": 10,
+            "title": "Description"
+          }
+        },
+        "additionalProperties": false,
+        "type": "object",
+        "required": [
+          "title",
+          "description"
+        ],
+        "title": "UseCaseCreateRequest",
+        "description": "Request payload to create a new Use Case."
+      },
+      "UseCaseDetailResponse": {
+        "properties": {
+          "id": {
+            "type": "string",
+            "format": "uuid",
+            "title": "Id"
+          },
+          "organization_id": {
+            "type": "string",
+            "format": "uuid",
+            "title": "Organization Id"
+          },
+          "project_id": {
+            "type": "string",
+            "format": "uuid",
+            "title": "Project Id"
+          },
+          "title": {
+            "type": "string",
+            "title": "Title"
+          },
+          "description": {
+            "type": "string",
+            "title": "Description"
+          },
+          "status": {
+            "type": "string",
+            "title": "Status"
+          },
+          "current_version": {
+            "type": "integer",
+            "title": "Current Version"
+          },
+          "created_by": {
+            "type": "string",
+            "format": "uuid",
+            "title": "Created By"
+          },
+          "approved_by": {
+            "anyOf": [
+              {
+                "type": "string",
+                "format": "uuid"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "title": "Approved By"
+          },
+          "approved_at": {
+            "anyOf": [
+              {
+                "type": "string",
+                "format": "date-time"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "title": "Approved At"
+          },
+          "created_at": {
+            "type": "string",
+            "format": "date-time",
+            "title": "Created At"
+          },
+          "updated_at": {
+            "type": "string",
+            "format": "date-time",
+            "title": "Updated At"
+          },
+          "messages": {
+            "items": {
+              "$ref": "#/components/schemas/DiscoveryMessageItem"
+            },
+            "type": "array",
+            "title": "Messages"
+          },
+          "latest_specification": {
+            "anyOf": [
+              {
+                "$ref": "#/components/schemas/UseCaseSpecification"
+              },
+              {
+                "type": "null"
+              }
+            ]
+          }
+        },
+        "type": "object",
+        "required": [
+          "id",
+          "organization_id",
+          "project_id",
+          "title",
+          "description",
+          "status",
+          "current_version",
+          "created_by",
+          "created_at",
+          "updated_at"
+        ],
+        "title": "UseCaseDetailResponse",
+        "description": "Detailed response for a Use Case including messages and latest specification."
+      },
+      "UseCaseMessageCreateRequest": {
+        "properties": {
+          "message_text": {
+            "type": "string",
+            "minLength": 1,
+            "title": "Message Text"
+          }
+        },
+        "additionalProperties": false,
+        "type": "object",
+        "required": [
+          "message_text"
+        ],
+        "title": "UseCaseMessageCreateRequest",
+        "description": "Request payload to post a discovery response."
+      },
+      "UseCaseResponse": {
+        "properties": {
+          "id": {
+            "type": "string",
+            "format": "uuid",
+            "title": "Id"
+          },
+          "organization_id": {
+            "type": "string",
+            "format": "uuid",
+            "title": "Organization Id"
+          },
+          "project_id": {
+            "type": "string",
+            "format": "uuid",
+            "title": "Project Id"
+          },
+          "title": {
+            "type": "string",
+            "title": "Title"
+          },
+          "description": {
+            "type": "string",
+            "title": "Description"
+          },
+          "status": {
+            "type": "string",
+            "title": "Status"
+          },
+          "current_version": {
+            "type": "integer",
+            "title": "Current Version"
+          },
+          "created_by": {
+            "type": "string",
+            "format": "uuid",
+            "title": "Created By"
+          },
+          "approved_by": {
+            "anyOf": [
+              {
+                "type": "string",
+                "format": "uuid"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "title": "Approved By"
+          },
+          "approved_at": {
+            "anyOf": [
+              {
+                "type": "string",
+                "format": "date-time"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "title": "Approved At"
+          },
+          "created_at": {
+            "type": "string",
+            "format": "date-time",
+            "title": "Created At"
+          },
+          "updated_at": {
+            "type": "string",
+            "format": "date-time",
+            "title": "Updated At"
+          }
+        },
+        "type": "object",
+        "required": [
+          "id",
+          "organization_id",
+          "project_id",
+          "title",
+          "description",
+          "status",
+          "current_version",
+          "created_by",
+          "created_at",
+          "updated_at"
+        ],
+        "title": "UseCaseResponse",
+        "description": "Summary response for a Use Case."
+      },
+      "UseCaseSpecification": {
+        "properties": {
+          "use_case_id": {
+            "type": "string",
+            "format": "uuid",
+            "title": "Use Case Id"
+          },
+          "version_number": {
+            "type": "integer",
+            "title": "Version Number"
+          },
+          "title": {
+            "type": "string",
+            "title": "Title"
+          },
+          "description": {
+            "type": "string",
+            "title": "Description"
+          },
+          "business_objective": {
+            "type": "string",
+            "title": "Business Objective"
+          },
+          "expected_outcomes": {
+            "items": {
+              "type": "string"
+            },
+            "type": "array",
+            "title": "Expected Outcomes"
+          },
+          "stakeholders_and_roles": {
+            "items": {
+              "type": "string"
+            },
+            "type": "array",
+            "title": "Stakeholders And Roles"
+          },
+          "workflow_description": {
+            "type": "string",
+            "title": "Workflow Description"
+          },
+          "inputs_and_outputs": {
+            "$ref": "#/components/schemas/InputsAndOutputs"
+          },
+          "source_systems": {
+            "items": {
+              "type": "string"
+            },
+            "type": "array",
+            "title": "Source Systems"
+          },
+          "data_classification": {
+            "type": "string",
+            "title": "Data Classification",
+            "default": "INTERNAL"
+          },
+          "freshness_and_latency": {
+            "type": "string",
+            "title": "Freshness And Latency"
+          },
+          "retrieval_requirements": {
+            "type": "string",
+            "title": "Retrieval Requirements"
+          },
+          "required_tools_and_actions": {
+            "items": {
+              "type": "string"
+            },
+            "type": "array",
+            "title": "Required Tools And Actions"
+          },
+          "risk_level": {
+            "type": "string",
+            "title": "Risk Level",
+            "default": "MEDIUM"
+          },
+          "human_approval_requirements": {
+            "items": {
+              "type": "string"
+            },
+            "type": "array",
+            "title": "Human Approval Requirements"
+          },
+          "proposed_architecture": {
+            "type": "string",
+            "title": "Proposed Architecture"
+          },
+          "architecture_rationale_and_alternatives": {
+            "$ref": "#/components/schemas/ArchitectureRationale"
+          },
+          "implementation_plan": {
+            "items": {
+              "$ref": "#/components/schemas/ImplementationMilestone"
+            },
+            "type": "array",
+            "title": "Implementation Plan"
+          },
+          "estimates_and_assumptions": {
+            "$ref": "#/components/schemas/EstimatesAndAssumptions"
+          },
+          "risks_and_dependencies": {
+            "items": {
+              "$ref": "#/components/schemas/TechnicalRisk"
+            },
+            "type": "array",
+            "title": "Risks And Dependencies"
+          },
+          "open_questions": {
+            "items": {
+              "type": "string"
+            },
+            "type": "array",
+            "title": "Open Questions"
+          },
+          "success_metrics": {
+            "items": {
+              "type": "string"
+            },
+            "type": "array",
+            "title": "Success Metrics"
+          },
+          "evaluation_plan": {
+            "type": "string",
+            "title": "Evaluation Plan"
+          },
+          "specification_status": {
+            "type": "string",
+            "title": "Specification Status",
+            "default": "REVIEW"
+          },
+          "created_at": {
+            "type": "string",
+            "format": "date-time",
+            "title": "Created At"
+          },
+          "updated_at": {
+            "type": "string",
+            "format": "date-time",
+            "title": "Updated At"
+          }
+        },
+        "type": "object",
+        "required": [
+          "use_case_id",
+          "version_number",
+          "title",
+          "description",
+          "business_objective",
+          "workflow_description",
+          "inputs_and_outputs",
+          "freshness_and_latency",
+          "retrieval_requirements",
+          "proposed_architecture",
+          "architecture_rationale_and_alternatives",
+          "estimates_and_assumptions",
+          "evaluation_plan",
+          "created_at",
+          "updated_at"
+        ],
+        "title": "UseCaseSpecification",
+        "description": "Validated, versioned, structured solution specification generated by the Use-Case Architect.\n\nConforms to all Phase 11 Section 3.5 requirements."
+      },
+      "UseCaseUpdateRequest": {
+        "properties": {
+          "title": {
+            "anyOf": [
+              {
+                "type": "string",
+                "maxLength": 255,
+                "minLength": 3
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "title": "Title"
+          },
+          "description": {
+            "anyOf": [
+              {
+                "type": "string",
+                "minLength": 10
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "title": "Description"
+          }
+        },
+        "additionalProperties": false,
+        "type": "object",
+        "title": "UseCaseUpdateRequest",
+        "description": "Request payload to update use case metadata."
       },
       "UserLoginRequest": {
         "properties": {

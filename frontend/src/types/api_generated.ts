@@ -76,6 +76,24 @@ export interface ApprovalResponse {
 /** Human decision state for an action approval gate. */
 export type ApprovalStatus = 'PENDING' | 'APPROVED' | 'REJECTED' | 'EXPIRED' | 'REVOKED';
 
+/** An alternative technical approach considered and evaluated. */
+export interface ArchitectureAlternative {
+  approach: string;
+  pros?: string[];
+  cons?: string[];
+  rejection_reason: string;
+}
+
+/** Deep technical justification for the recommended solution pattern. */
+export interface ArchitectureRationale {
+  recommended_pattern: string;
+  justification: string;
+  deterministic_components?: string[];
+  retrieval_components?: string[];
+  agentic_components?: string[];
+  alternatives_considered?: ArchitectureAlternative[];
+}
+
 /** Paginated list of audit events. */
 export interface AuditEventListResponse {
   items: AuditEventResponse[];
@@ -401,6 +419,23 @@ export interface DateTimeStats {
   invalid_count?: number;
 }
 
+/** A single discovery message item. */
+export interface DiscoveryMessageItem {
+  id: string;
+  sender_role: string;
+  message_text: string;
+  extracted_requirements?: ExtractedRequirements | null;
+  clarification_questions?: string[] | null;
+  created_at: string;
+}
+
+/** Response returned after processing a discovery turn. */
+export interface DiscoveryTurnResponse {
+  user_message: DiscoveryMessageItem;
+  assistant_message: DiscoveryMessageItem;
+  can_generate_specification: boolean;
+}
+
 /** Request to upload an unstructured document for RAG indexing. */
 export interface DocumentCreateRequest {
   title: string;
@@ -468,6 +503,13 @@ export interface ErrorResponse {
   details?: unknown;
   /** Unique correlation identifier for log tracing */
   correlation_id?: string | null;
+}
+
+/** Estimates and explicitly separated assumptions vs verified capabilities. */
+export interface EstimatesAndAssumptions {
+  delivery_estimates?: string[];
+  verified_capabilities?: string[];
+  unverified_assumptions?: string[];
 }
 
 /** Payload to create an AI evaluation regression benchmark dataset. */
@@ -553,6 +595,21 @@ export type EvidenceSourceType = 'BUSINESS_RECORD' | 'PROCESS_EVENT' | 'DOCUMENT
 /** Dispatch outcome for a target-system adapter execution. */
 export type ExecutionStatus = 'QUEUED' | 'DISPATCHING' | 'SUCCEEDED' | 'FAILED' | 'RECONCILIATION_REQUIRED';
 
+/** Structured extraction of user requirements and discovery state. */
+export interface ExtractedRequirements {
+  business_objective?: string | null;
+  expected_outcomes?: string[];
+  stakeholders?: string[];
+  workflows?: string[];
+  inputs?: string[];
+  outputs?: string[];
+  source_systems?: string[];
+  data_sensitivity?: string | null;
+  freshness_latency?: string | null;
+  confirmed_requirements?: string[];
+  unverified_assumptions?: string[];
+}
+
 /** API response model representing a detected operational exception finding. */
 export interface FindingResponse {
   id: string;
@@ -591,6 +648,25 @@ export interface FindingStatusUpdate {
 
 export interface HTTPValidationError {
   detail?: ValidationError[];
+}
+
+/** A structured delivery milestone in the implementation plan. */
+export interface ImplementationMilestone {
+  milestone_id: string;
+  title: string;
+  description: string;
+  target_components?: string[];
+  dependencies?: string[];
+  estimated_effort: string;
+  acceptance_criteria?: string[];
+}
+
+/** Structured operational I/O definition. */
+export interface InputsAndOutputs {
+  inputs?: string[];
+  outputs?: string[];
+  decisions?: string[];
+  actions?: string[];
 }
 
 /** Request to initiate an investigation on an operational finding. */
@@ -1439,6 +1515,25 @@ export type SortDirection = 'asc' | 'desc';
 /** Supported data source connector types. */
 export type SourceType = 'FILE_INGEST' | 'POSTGRES' | 'MYSQL' | 'SNOWFLAKE';
 
+/** Structural diff between two specification revisions. */
+export interface SpecificationDiffResponse {
+  use_case_id: string;
+  v1: number;
+  v2: number;
+  differences: Record<string, Record<string, unknown>>;
+  summary: string;
+}
+
+/** Summary of a saved specification version. */
+export interface SpecificationVersionSummary {
+  version: number;
+  created_by: string;
+  created_at: string;
+  title: string;
+  proposed_architecture: string;
+  risk_level: string;
+}
+
 /** Execution summary returned by a bounded state machine. */
 export interface StateMachineResult {
   workflow_id: string;
@@ -1544,6 +1639,13 @@ export interface TaskResponse {
 /** Operational categories of durable background tasks. */
 export type TaskType = 'DATASET_IMPORT' | 'SCHEMA_PROFILING' | 'WORKFLOW_RUN' | 'MONITOR_SWEEP' | 'EVALUATION_RUN';
 
+/** An identified technical risk and its mitigation strategy. */
+export interface TechnicalRisk {
+  risk: string;
+  severity: string;
+  mitigation: string;
+}
+
 /** OAuth2 / JWT compatible token response. */
 export interface TokenResponse {
   /** Signed JWT access token */
@@ -1576,6 +1678,90 @@ export interface TraversalStep {
   target_object_id: string;
   target_object_name: string;
   join_expression?: Record<string, unknown> | null;
+}
+
+/** Request payload to create a new Use Case. */
+export interface UseCaseCreateRequest {
+  title: string;
+  description: string;
+}
+
+/** Detailed response for a Use Case including messages and latest specification. */
+export interface UseCaseDetailResponse {
+  id: string;
+  organization_id: string;
+  project_id: string;
+  title: string;
+  description: string;
+  status: string;
+  current_version: number;
+  created_by: string;
+  approved_by?: string | null;
+  approved_at?: string | null;
+  created_at: string;
+  updated_at: string;
+  messages?: DiscoveryMessageItem[];
+  latest_specification?: UseCaseSpecification | null;
+}
+
+/** Request payload to post a discovery response. */
+export interface UseCaseMessageCreateRequest {
+  message_text: string;
+}
+
+/** Summary response for a Use Case. */
+export interface UseCaseResponse {
+  id: string;
+  organization_id: string;
+  project_id: string;
+  title: string;
+  description: string;
+  status: string;
+  current_version: number;
+  created_by: string;
+  approved_by?: string | null;
+  approved_at?: string | null;
+  created_at: string;
+  updated_at: string;
+}
+
+/** Validated, versioned, structured solution specification generated by the Use-Case Architect.
+
+Conforms to all Phase 11 Section 3.5 requirements. */
+export interface UseCaseSpecification {
+  use_case_id: string;
+  version_number: number;
+  title: string;
+  description: string;
+  business_objective: string;
+  expected_outcomes?: string[];
+  stakeholders_and_roles?: string[];
+  workflow_description: string;
+  inputs_and_outputs: InputsAndOutputs;
+  source_systems?: string[];
+  data_classification?: string;
+  freshness_and_latency: string;
+  retrieval_requirements: string;
+  required_tools_and_actions?: string[];
+  risk_level?: string;
+  human_approval_requirements?: string[];
+  proposed_architecture: string;
+  architecture_rationale_and_alternatives: ArchitectureRationale;
+  implementation_plan?: ImplementationMilestone[];
+  estimates_and_assumptions: EstimatesAndAssumptions;
+  risks_and_dependencies?: TechnicalRisk[];
+  open_questions?: string[];
+  success_metrics?: string[];
+  evaluation_plan: string;
+  specification_status?: string;
+  created_at: string;
+  updated_at: string;
+}
+
+/** Request payload to update use case metadata. */
+export interface UseCaseUpdateRequest {
+  title?: string | null;
+  description?: string | null;
 }
 
 /** Payload for user authentication. */

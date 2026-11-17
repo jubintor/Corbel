@@ -461,6 +461,34 @@ The conceptual model is organized into seven cohesive subdomains with explicit r
   `FOREIGN KEY (organization_id, project_id) REFERENCES projects(organization_id, id)`
   Under standard SQL MATCH SIMPLE foreign key semantics in PostgreSQL, a null `project_id` represents an organization-level administrative event; when `project_id` is non-null, it is guaranteed to belong to that exact same `Organization`. An audit event cannot reference a project belonging to a different organization.
 
+### 4.8. Use-Case Architect Subdomain
+
+#### 33. Use Case
+- **Purpose:** Root entity representing a business operational problem statement undergoing architectural discovery, structured blueprinting, and solution design.
+- **Responsibilities:**
+  - Tracks business objectives, problem descriptions, and solution lifecycle states (`DRAFT` → `DISCOVERY` → `REVIEW` → `APPROVED`).
+  - Scoped strictly to Organization and Project (`organization_id`, `project_id`).
+  - Records the approving human user and approval timestamp upon formal review.
+- **Lifecycle States:** `DRAFT` → `DISCOVERY` → `REVIEW` → `APPROVED`.
+- **Key Attributes:** `id`, `organization_id`, `project_id`, `title`, `description`, `status`, `created_by`, `approved_by`, `approved_at`, `current_version`, `created_at`, `updated_at`.
+- **Ownership/Scope:** Scoped directly to `Project` and `Organization` (Direct Project Scope).
+
+#### 34. Use Case Message
+- **Purpose:** Immutable turn in the bounded discovery dialogue between user and architect.
+- **Responsibilities:**
+  - Captures conversational input, targeted clarification questions, and extracted requirement snapshots.
+  - Maintains strict separation between confirmed requirements and unverified assumptions.
+- **Key Attributes:** `id`, `use_case_id`, `sender_role`, `message_text`, `extracted_requirements_json`, `clarification_questions_json`, `created_at`.
+- **Ownership/Scope:** Scoped to `Use Case` (Inherited Project Scope).
+
+#### 35. Use Case Specification Version
+- **Purpose:** Immutable, version-controlled structured solution specification synthesized from discovery dialogue.
+- **Responsibilities:**
+  - Preserves validated 22+ field architecture design (problem statement, stakeholders, workflows, inputs/outputs, source systems, data classification, freshness/latency, retrieval strategy, proposed pattern, technical rationale, alternatives considered, implementation milestones, effort estimates, risks, and evaluation plan).
+  - Enforces strict schema validation; revision history is append-only with unique `(use_case_id, version)` constraint.
+- **Key Attributes:** `id`, `use_case_id`, `version`, `specification_json`, `created_by`, `created_at`.
+- **Ownership/Scope:** Scoped to `Use Case` (Inherited Project Scope).
+
 ---
 
 ## 5. Explicit Ownership & Same-Project Referential Integrity Invariants
