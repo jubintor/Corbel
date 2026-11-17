@@ -9,6 +9,8 @@ from sqlalchemy import (
     DateTime,
     ForeignKey,
     ForeignKeyConstraint,
+    Index,
+    Integer,
     String,
     UniqueConstraint,
     func,
@@ -117,7 +119,6 @@ class User(Base):
     hashed_password: Mapped[str] = mapped_column(String(255), nullable=False)
     full_name: Mapped[str] = mapped_column(String(255), nullable=False)
     is_active: Mapped[bool] = mapped_column(Boolean, default=True, nullable=False)
-    is_superuser: Mapped[bool] = mapped_column(Boolean, default=False, nullable=False)
     created_at: Mapped[datetime] = mapped_column(
         DateTime(timezone=True),
         server_default=func.now(),
@@ -289,6 +290,13 @@ class ProjectMember(Base):
             ondelete="CASCADE",
             name="fk_project_members_org_project",
         ),
+        # Composite FK enforcing user membership in the stated organization (P2-LIM-002)
+        ForeignKeyConstraint(
+            ["organization_id", "user_id"],
+            ["organization_members.organization_id", "organization_members.user_id"],
+            ondelete="CASCADE",
+            name="fk_project_members_org_user",
+        ),
     )
 
 
@@ -344,6 +352,11 @@ class UserSession(Base):
         cascade="all, delete-orphan",
     )
 
+    __table_args__ = (
+        Index("ix_user_sessions_expires_at", "expires_at"),
+        Index("ix_user_sessions_status_created_at", "status", "created_at"),
+    )
+
 
 class RefreshToken(Base):
     """Persisted refresh token with cryptographic hash, family tracking, and rotation status.
@@ -383,7 +396,29 @@ class RefreshToken(Base):
     )
     revoked_at: Mapped[datetime | None] = mapped_column(DateTime(timezone=True), nullable=True)
     replaced_by: Mapped[uuid.UUID | None] = mapped_column(UUID(as_uuid=True), nullable=True)
+    encrypted_replacement_token: Mapped[str | None] = mapped_column(String(2048), nullable=True)
+    idempotency_key_hash: Mapped[str | None] = mapped_column(String(64), index=True, nullable=True)
 
     # Relationships
     user: Mapped["User"] = relationship("User", back_populates="refresh_tokens")
     session: Mapped["UserSession | None"] = relationship("UserSession", back_populates="refresh_tokens")
+
+    __table_args__ = (
+        Index("ix_refresh_tokens_expires_at", "expires_at"),
+        Index("ix_refresh_tokens_is_revoked_revoked_at", "is_revoked", "revoked_at"),
+    )
+
+
+class RateLimitBucket(Base):
+    """Distributed rate-limiting buckets in PostgreSQL (P2-LIM-004)."""
+
+    __tablename__ = "rate_limit_buckets"
+
+    key: Mapped[str] = mapped_column(String(255), primary_key=True, nullable=False)
+    tokens: Mapped[int] = mapped_column(Integer, nullable=False)
+    last_updated: Mapped[datetime] = mapped_column(DateTime(timezone=True), nullable=False)
+    blocked_until: Mapped[datetime | None] = mapped_column(DateTime(timezone=True), nullable=True)
+
+    __table_args__ = (
+        Index("ix_rate_limit_buckets_last_updated_blocked_until", "last_updated", "blocked_until"),
+    )

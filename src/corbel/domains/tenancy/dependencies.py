@@ -7,13 +7,16 @@ from datetime import UTC, datetime
 
 from fastapi import Depends, Header, Request
 from fastapi.security import HTTPAuthorizationCredentials, HTTPBearer
+from sqlalchemy import select
 from sqlalchemy.ext.asyncio import AsyncSession
 
 from corbel.core.database import get_db_session
 from corbel.domains.tenancy.exceptions import (
     InsufficientPermissionException,
     InvalidCredentialsException,
+    MembershipInactiveException,
     NotOrganizationMemberException,
+    OrganizationSuspendedException,
 )
 from corbel.domains.tenancy.models import (
     MembershipStatus,
@@ -85,10 +88,21 @@ async def get_current_user(
     except ValueError as exc:
         raise AuthenticationException("Invalid session ID format in token") from exc
 
-    user_session = await session.get(UserSession, session_id)
+    # Enforce server-side session validation using a single joined query for performance
+    stmt = (
+        select(UserSession, User)
+        .join(User, UserSession.user_id == User.id)
+        .where(UserSession.id == session_id)
+    )
+    result = await session.execute(stmt)
+    row = result.first()
+    if row is None:
+        raise AuthenticationException("Session has been terminated or revoked. Please sign in again.")
+
+    user_session: UserSession = row[0]
+    user: User = row[1]
     if (
-        user_session is None
-        or user_session.status != SessionStatus.ACTIVE.value
+        user_session.status != SessionStatus.ACTIVE.value
         or user_session.user_id != user_id
     ):
         raise AuthenticationException("Session has been terminated or revoked. Please sign in again.")
@@ -98,10 +112,6 @@ async def get_current_user(
         user_session.status = SessionStatus.EXPIRED.value
         await session.commit()
         raise AuthenticationException("Session has expired. Please sign in again.")
-
-    user = await session.get(User, user_id)
-    if user is None:
-        raise InvalidCredentialsException("User associated with this token no longer exists")
 
     if not user.is_active:
         raise InvalidCredentialsException("User account is inactive. Access denied.")
@@ -146,11 +156,26 @@ async def get_active_tenant_context(
                 "Multiple active organizations available. Please provide an X-Organization-ID header."
             )
 
-    # 2. Strict membership and status verification
-    membership = await service.verify_membership(target_org_id, current_user.id)
-    org = await session.get(Organization, target_org_id)
-    if org is None:
+    # 2. Strict membership and status verification with single joined query
+    stmt = (
+        select(OrganizationMember, Organization)
+        .join(Organization, OrganizationMember.organization_id == Organization.id)
+        .where(
+            OrganizationMember.organization_id == target_org_id,
+            OrganizationMember.user_id == current_user.id,
+        )
+    )
+    result = await session.execute(stmt)
+    row = result.first()
+    if row is None:
         raise NotOrganizationMemberException(target_org_id)
+
+    membership, org = row
+    if membership.status != MembershipStatus.ACTIVE.value:
+        raise MembershipInactiveException(status=membership.status)
+
+    if org.status != OrgStatus.ACTIVE.value:
+        raise OrganizationSuspendedException(org_id=target_org_id)
 
     return TenantContext(
         user=current_user,

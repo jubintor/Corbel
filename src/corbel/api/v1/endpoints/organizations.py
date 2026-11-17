@@ -12,6 +12,7 @@ from corbel.domains.tenancy.schemas import (
     MemberAddRequest,
     MemberResponse,
     MemberRoleUpdateRequest,
+    MemberStatusUpdateRequest,
     OrganizationCreateRequest,
     OrganizationResponse,
     OrganizationUpdateRequest,
@@ -174,6 +175,37 @@ async def update_member_role(
     """Update role of an organization member."""
     service = TenancyService(session)
     member = await service.update_member_role(org_id, current_user.id, user_id, req.role)
+    target_user = await session.get(User, member.user_id)
+    assert target_user is not None
+    return MemberResponse(
+        id=member.id,
+        organization_id=member.organization_id,
+        user_id=member.user_id,
+        email=target_user.email,
+        full_name=target_user.full_name,
+        role=member.role,
+        status=member.status,
+        created_at=member.created_at,
+    )
+
+
+@router.patch(
+    "/{org_id}/members/{user_id}/status",
+    response_model=MemberResponse,
+    status_code=status.HTTP_200_OK,
+    summary="Update Member Status",
+    description="Update an organization member's status (ACTIVE, SUSPENDED, REVOKED). Suspended/revoked status terminates active sessions. Requires ORG_ADMIN privileges.",
+)
+async def update_member_status(
+    org_id: uuid.UUID,
+    user_id: uuid.UUID,
+    req: MemberStatusUpdateRequest,
+    current_user: User = Depends(get_current_user),
+    session: AsyncSession = Depends(get_db_session),
+) -> MemberResponse:
+    """Update status of an organization member."""
+    service = TenancyService(session)
+    member = await service.update_member_status(org_id, current_user.id, user_id, req.status)
     target_user = await session.get(User, member.user_id)
     assert target_user is not None
     return MemberResponse(

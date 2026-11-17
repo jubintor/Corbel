@@ -66,6 +66,18 @@ export function AuthProvider({ children }: { children: ReactNode }) {
     []
   )
 
+  // Listen for session expiration events dispatched by apiClient
+  useEffect(() => {
+    const handleSessionExpired = () => {
+      setUser(null)
+      setToken(null)
+      setOrganizations([])
+      setActiveOrg(null)
+    }
+    window.addEventListener('corbel:session-expired', handleSessionExpired)
+    return () => window.removeEventListener('corbel:session-expired', handleSessionExpired)
+  }, [])
+
   // Initialize auth state on mount
   useEffect(() => {
     async function initAuth() {

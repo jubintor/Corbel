@@ -6,10 +6,11 @@ Create Date: 2026-11-14 21:30:00.000000
 
 """
 from collections.abc import Sequence
-from alembic import op
+
 import sqlalchemy as sa
 from sqlalchemy.dialects.postgresql import UUID
 
+from alembic import op
 
 # revision identifiers, used by Alembic.
 revision: str = "0002_authentication_and_tenancy"

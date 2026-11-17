@@ -13,6 +13,7 @@ from corbel.domains.tenancy.schemas import (
     UserRegisterRequest,
     UserResponse,
 )
+from corbel.domains.tenancy.security import get_client_ip
 from corbel.domains.tenancy.service import TenancyService
 
 router = APIRouter()
@@ -27,11 +28,13 @@ router = APIRouter()
 )
 async def register(
     req: UserRegisterRequest,
+    request: Request,
     session: AsyncSession = Depends(get_db_session),
 ) -> UserResponse:
     """Create a new user identity."""
     service = TenancyService(session)
-    user = await service.register_user(req)
+    ip_address = get_client_ip(request)
+    user = await service.register_user(req, ip_address=ip_address)
     return UserResponse.model_validate(user)
 
 
@@ -49,7 +52,7 @@ async def login(
 ) -> TokenResponse:
     """Authenticate and obtain JWT access token with persistent session."""
     service = TenancyService(session)
-    ip_address = request.client.host if request.client else None
+    ip_address = get_client_ip(request)
     user_agent = request.headers.get("user-agent")
     return await service.authenticate_user(req, ip_address=ip_address, user_agent=user_agent)
 
@@ -63,11 +66,20 @@ async def login(
 )
 async def refresh_token(
     req: RefreshTokenRequest,
+    request: Request,
     session: AsyncSession = Depends(get_db_session),
 ) -> TokenResponse:
     """Issue a new access token from refresh token."""
     service = TenancyService(session)
-    return await service.refresh_access_token(req.refresh_token)
+    idempotency_key = (
+        req.idempotency_key
+        or request.headers.get("idempotency-key")
+        or request.headers.get("x-idempotency-key")
+    )
+    return await service.refresh_access_token(
+        req.refresh_token,
+        idempotency_key=idempotency_key,
+    )
 
 
 @router.get(

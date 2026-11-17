@@ -1,14 +1,13 @@
 services:
   corbel-db:
-    image: postgres:16-alpine
+    image: pgvector/pgvector:pg16
     container_name: corbel-db
     environment:
       POSTGRES_USER: corbel
       POSTGRES_PASSWORD: corbel_secret_password
       POSTGRES_DB: corbel_db
     ports:
-      - "5432:5432"
-      - "5433:5432"
+      - "${POSTGRES_PORT:-5432}:5432"
     volumes:
       - corbel_pgdata:/var/lib/postgresql/data
     healthcheck:
@@ -18,6 +17,29 @@ services:
       retries: 5
     restart: unless-stopped
 
+  corbel-migration:
+    build:
+      context: .
+      dockerfile: docker/backend.Dockerfile
+    container_name: corbel-migration
+    depends_on:
+      corbel-db:
+        condition: service_healthy
+    environment:
+      ENVIRONMENT: development
+      POSTGRES_SERVER: corbel-db
+      POSTGRES_PORT: 5432
+      POSTGRES_USER: corbel
+      POSTGRES_PASSWORD: corbel_secret_password
+      POSTGRES_DB: corbel_db
+    volumes:
+      - ./alembic:/app/alembic
+      - ./alembic.ini:/app/alembic.ini
+      - ./src:/app/src
+      - ./pyproject.toml:/app/pyproject.toml
+    command: ["alembic", "upgrade", "head"]
+    restart: "no"
+
   corbel-backend:
     build:
       context: .
@@ -26,6 +48,8 @@ services:
     depends_on:
       corbel-db:
         condition: service_healthy
+      corbel-migration:
+        condition: service_completed_successfully
     ports:
       - "8000:8000"
     environment:
@@ -47,7 +71,7 @@ services:
       - ./tests:/app/tests
       - ./pyproject.toml:/app/pyproject.toml
       - ./data:/app/data
-    command: ["sh", "-c", "alembic upgrade head && uvicorn corbel.main:app --host 0.0.0.0 --port 8000 --reload"]
+    command: ["uvicorn", "corbel.main:app", "--host", "0.0.0.0", "--port", "8000", "--reload"]
     restart: unless-stopped
 
   corbel-frontend:

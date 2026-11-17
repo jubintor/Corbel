@@ -23,6 +23,7 @@ class CorrelationIdMiddleware(BaseHTTPMiddleware):
             or str(uuid.uuid4())
         )
         set_correlation_id(correlation_id)
+        request.state.correlation_id = correlation_id
 
         try:
             response = await call_next(request)
@@ -37,22 +38,29 @@ class RequestLoggingMiddleware(BaseHTTPMiddleware):
 
     async def dispatch(self, request: Request, call_next: RequestResponseEndpoint) -> Response:
         start_time = time.perf_counter()
-        correlation_id = get_correlation_id()
         path = request.url.path
         method = request.method
 
         try:
             response = await call_next(request)
             duration_ms = round((time.perf_counter() - start_time) * 1000, 2)
+            correlation_id = get_correlation_id() or getattr(request.state, "correlation_id", None)
             # Avoid noisy logs for health probes
             if not path.endswith("/health") and not path.endswith("/health/live"):
                 logger.info(
                     f"{method} {path} - {response.status_code} ({duration_ms}ms)",
-                    extra={"method": method, "path": path, "status_code": response.status_code, "duration_ms": duration_ms},
+                    extra={
+                        "method": method,
+                        "path": path,
+                        "status_code": response.status_code,
+                        "duration_ms": duration_ms,
+                        "correlation_id": correlation_id,
+                    },
                 )
             return response
         except Exception as exc:
             duration_ms = round((time.perf_counter() - start_time) * 1000, 2)
+            correlation_id = get_correlation_id() or getattr(request.state, "correlation_id", None)
             logger.error(
                 f"{method} {path} - Exception: {exc} ({duration_ms}ms)",
                 extra={"method": method, "path": path, "duration_ms": duration_ms, "correlation_id": correlation_id},

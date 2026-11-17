@@ -14,6 +14,9 @@ os.environ.setdefault("POSTGRES_PORT", os.environ.get("POSTGRES_PORT", "5433"))
 os.environ.setdefault("POSTGRES_USER", "corbel")
 os.environ.setdefault("POSTGRES_PASSWORD", "corbel_secret_password")
 os.environ.setdefault("POSTGRES_DB", "corbel_db")
+os.environ.setdefault("RATE_LIMIT_LOGIN_PER_MINUTE", "10000")
+os.environ.setdefault("RATE_LIMIT_REGISTER_PER_MINUTE", "10000")
+os.environ.setdefault("RATE_LIMIT_LOGIN_FAILURES_LOCKOUT", "1000")
 
 from corbel.core.database import close_db_engine
 from corbel.main import app

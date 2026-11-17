@@ -4,14 +4,14 @@ import logging
 from collections.abc import AsyncGenerator
 from contextlib import asynccontextmanager
 
-from fastapi import FastAPI
+from fastapi import FastAPI, Response
 from fastapi.middleware.cors import CORSMiddleware
-from fastapi.responses import RedirectResponse
 
 from corbel.api.v1.api import api_router
+from corbel.api.v1.endpoints.health import SystemHealthResponse, get_system_health
 from corbel.core.config import get_settings
 from corbel.core.database import close_db_engine
-from corbel.core.exceptions import setup_exception_handlers
+from corbel.core.exceptions import ErrorResponse, setup_exception_handlers
 from corbel.core.logging import setup_logging
 from corbel.core.middleware import CorrelationIdMiddleware, RequestLoggingMiddleware
 
@@ -47,12 +47,17 @@ def create_application() -> FastAPI:
         docs_url="/docs",
         redoc_url="/redoc",
         openapi_url="/openapi.json",
+        responses={
+            500: {"model": ErrorResponse, "description": "Standardized platform error response"},
+        },
         lifespan=lifespan,
     )
 
     # 1. Register Core Middlewares
-    app.add_middleware(CorrelationIdMiddleware)
+    # Middlewares execute in reverse order of addition in Starlette.
+    # Execution sequence: CORSMiddleware -> CorrelationIdMiddleware -> RequestLoggingMiddleware -> Router
     app.add_middleware(RequestLoggingMiddleware)
+    app.add_middleware(CorrelationIdMiddleware)
     app.add_middleware(
         CORSMiddleware,
         allow_origins=settings.CORS_ORIGINS,
@@ -67,7 +72,7 @@ def create_application() -> FastAPI:
     # 3. Register Versioned API Routes
     app.include_router(api_router, prefix=settings.API_V1_PREFIX)
 
-    # 4. Root convenience endpoints
+    # 4. Root convenience and infrastructure probe endpoints
     @app.get("/", summary="Platform index", include_in_schema=False)
     async def root_index() -> dict[str, str]:
         return {
@@ -78,9 +83,15 @@ def create_application() -> FastAPI:
             "health_url": f"{settings.API_V1_PREFIX}/health",
         }
 
-    @app.get("/health", summary="Root health redirect", include_in_schema=False)
-    async def root_health_redirect() -> RedirectResponse:
-        return RedirectResponse(url=f"{settings.API_V1_PREFIX}/health")
+    @app.get(
+        "/health",
+        response_model=SystemHealthResponse,
+        summary="Platform root health probe",
+        description="Direct liveness and database readiness probe returning HTTP 200 without redirect (P1-LIM-013).",
+        include_in_schema=False,
+    )
+    async def root_health(response: Response) -> SystemHealthResponse:
+        return await get_system_health(response)
 
     return app
 

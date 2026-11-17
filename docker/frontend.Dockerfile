@@ -7,11 +7,11 @@ FROM node:22-alpine AS builder
 
 WORKDIR /app
 
-# Copy dependency manifests
-COPY frontend/package.json ./
+# Copy dependency manifests and committed lockfile for deterministic builds (P1-LIM-006)
+COPY frontend/package.json frontend/package-lock.json ./
 
-# Install dependencies
-RUN npm install
+# Install dependencies strictly matching the lockfile
+RUN npm ci
 
 # Copy frontend source files
 COPY frontend/ .

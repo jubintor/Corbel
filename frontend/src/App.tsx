@@ -29,8 +29,38 @@ function AppContent() {
 
   useEffect(() => {
     loadHealth()
-    const intervalId = setInterval(loadHealth, 30000)
-    return () => clearInterval(intervalId)
+
+    let intervalId: ReturnType<typeof setInterval> | null = null
+
+    const startPolling = () => {
+      if (!intervalId) {
+        intervalId = setInterval(loadHealth, 30000)
+      }
+    }
+
+    const stopPolling = () => {
+      if (intervalId) {
+        clearInterval(intervalId)
+        intervalId = null
+      }
+    }
+
+    const handleVisibilityChange = () => {
+      if (document.hidden) {
+        stopPolling()
+      } else {
+        loadHealth()
+        startPolling()
+      }
+    }
+
+    startPolling()
+    document.addEventListener('visibilitychange', handleVisibilityChange)
+
+    return () => {
+      stopPolling()
+      document.removeEventListener('visibilitychange', handleVisibilityChange)
+    }
   }, [loadHealth])
 
   const handleOpenAuth = (mode: 'login' | 'register') => {

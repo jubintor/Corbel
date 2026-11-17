@@ -9,7 +9,8 @@
     "test": "vitest run",
     "test:watch": "vitest",
     "lint": "oxlint",
-    "preview": "vite preview"
+    "preview": "vite preview",
+    "generate-api": "python ../scripts/generate_openapi.py"
   },
   "dependencies": {
     "react": "^19.3.1",

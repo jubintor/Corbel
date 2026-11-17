@@ -6,6 +6,7 @@ from corbel.api.v1.endpoints import (
     ai,
     auth,
     datasets,
+    governance,
     health,
     monitors,
     ontology,
@@ -26,3 +27,4 @@ api_router.include_router(query.router, tags=["Structured Querying & Early AI Ga
 api_router.include_router(process.router, tags=["Process Intelligence & Event Mining"])
 api_router.include_router(monitors.router, tags=["Adaptive Monitors & Exception Detection"])
 api_router.include_router(ai.router, tags=["AI Infrastructure & Bounded State Machines"])
+api_router.include_router(governance.router, tags=["Governed Investigation, Approvals & RAG"])

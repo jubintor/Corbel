@@ -1,5 +1,6 @@
 """PostgreSQL database engine, session management, and connectivity health check."""
 
+import asyncio
 import logging
 import time
 from collections.abc import AsyncGenerator
@@ -45,8 +46,10 @@ def get_engine() -> AsyncEngine:
                 settings.async_database_url,
                 echo=settings.DEBUG,
                 pool_pre_ping=True,
-                pool_size=10,
-                max_overflow=20,
+                pool_size=settings.DB_POOL_SIZE,
+                max_overflow=settings.DB_MAX_OVERFLOW,
+                pool_timeout=settings.DB_POOL_TIMEOUT_SECONDS,
+                pool_recycle=settings.DB_POOL_RECYCLE_SECONDS,
             )
     return _engine
 
@@ -77,14 +80,28 @@ async def get_db_session() -> AsyncGenerator[AsyncSession, None]:
 
 
 async def check_database_health() -> tuple[bool, str, float]:
-    """Check database connectivity with SELECT 1 and return (healthy, message, latency_ms)."""
+    """Check database connectivity with timeout and verify system metadata (P1-LIM-009, P1-LIM-012)."""
+    settings = get_settings()
+    timeout = getattr(settings, "DB_HEALTH_CHECK_TIMEOUT_SECONDS", 3.0)
     start_time = time.perf_counter()
     try:
-        engine = get_engine()
-        async with engine.connect() as conn:
-            await conn.execute(text("SELECT 1"))
+        async with asyncio.timeout(timeout):
+            engine = get_engine()
+            async with engine.connect() as conn:
+                # 1. Execute basic ping
+                await conn.execute(text("SELECT 1"))
+                # 2. Query system_metadata to verify schema foundation baseline
+                result = await conn.execute(
+                    text("SELECT value FROM system_metadata WHERE key = 'corbel_platform_version' LIMIT 1")
+                )
+                version_val = result.scalar_one_or_none()
+                schema_info = f" (schema v{version_val})" if version_val else ""
         latency_ms = round((time.perf_counter() - start_time) * 1000, 2)
-        return True, "Database connection operational", latency_ms
+        return True, f"PostgreSQL connection operational{schema_info}", latency_ms
+    except TimeoutError:
+        latency_ms = round((time.perf_counter() - start_time) * 1000, 2)
+        logger.warning(f"Database health check timed out after {timeout}s")
+        return False, f"Database health check timed out after {timeout}s", latency_ms
     except Exception as exc:
         latency_ms = round((time.perf_counter() - start_time) * 1000, 2)
         logger.warning(f"Database health check failed: {exc}")

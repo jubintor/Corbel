@@ -196,6 +196,7 @@ class Finding(Base):
             name="fk_findings_project_monitor",
         ),
         UniqueConstraint("project_id", "deduplication_hash", name="uq_findings_project_dedup"),
+        UniqueConstraint("project_id", "id", name="uq_findings_project_id_id"),
     )
 
     id: Mapped[uuid.UUID] = mapped_column(

@@ -65,11 +65,19 @@ class ResourceNotFoundException(CorbelException):
 
 
 def setup_exception_handlers(app: FastAPI) -> None:
-    """Register standardized exception handlers on the FastAPI application."""
+    """Register standardized exception handlers on the FastAPI application (P1-LIM-002)."""
+
+    def _resolve_correlation_id(request: Request) -> str | None:
+        return (
+            get_correlation_id()
+            or getattr(request.state, "correlation_id", None)
+            or request.headers.get("X-Correlation-ID")
+            or request.headers.get("X-Request-ID")
+        )
 
     @app.exception_handler(CorbelException)
     async def corbel_exception_handler(_request: Request, exc: CorbelException) -> JSONResponse:
-        correlation_id = get_correlation_id()
+        correlation_id = _resolve_correlation_id(_request)
         logger.warning(f"Handled application exception [{exc.error_code}]: {exc.message}")
         content = ErrorResponse(
             error=exc.error_code,
@@ -77,11 +85,12 @@ def setup_exception_handlers(app: FastAPI) -> None:
             details=exc.details,
             correlation_id=correlation_id,
         ).model_dump()
-        return JSONResponse(status_code=exc.status_code, content=content)
+        headers = {"X-Correlation-ID": correlation_id} if correlation_id else None
+        return JSONResponse(status_code=exc.status_code, content=content, headers=headers)
 
     @app.exception_handler(RequestValidationError)
     async def validation_exception_handler(_request: Request, exc: RequestValidationError) -> JSONResponse:
-        correlation_id = get_correlation_id()
+        correlation_id = _resolve_correlation_id(_request)
         logger.info(f"Request validation failed: {exc.errors()}")
         content = ErrorResponse(
             error="VALIDATION_ERROR",
@@ -89,11 +98,12 @@ def setup_exception_handlers(app: FastAPI) -> None:
             details=jsonable_encoder(exc.errors()),
             correlation_id=correlation_id,
         ).model_dump()
-        return JSONResponse(status_code=status.HTTP_422_UNPROCESSABLE_ENTITY, content=content)
+        headers = {"X-Correlation-ID": correlation_id} if correlation_id else None
+        return JSONResponse(status_code=status.HTTP_422_UNPROCESSABLE_ENTITY, content=content, headers=headers)
 
     @app.exception_handler(Exception)
     async def unhandled_exception_handler(_request: Request, exc: Exception) -> JSONResponse:
-        correlation_id = get_correlation_id()
+        correlation_id = _resolve_correlation_id(_request)
         logger.error(f"Unhandled server exception: {exc}", exc_info=True)
         content = ErrorResponse(
             error="INTERNAL_SERVER_ERROR",
@@ -101,4 +111,5 @@ def setup_exception_handlers(app: FastAPI) -> None:
             details=None,
             correlation_id=correlation_id,
         ).model_dump()
-        return JSONResponse(status_code=status.HTTP_500_INTERNAL_SERVER_ERROR, content=content)
+        headers = {"X-Correlation-ID": correlation_id} if correlation_id else None
+        return JSONResponse(status_code=status.HTTP_500_INTERNAL_SERVER_ERROR, content=content, headers=headers)

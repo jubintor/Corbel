@@ -28,9 +28,10 @@ import {
 interface MonitorsWorkspaceProps {
   project: Project
   onBack: () => void
+  onNavigateToInvestigations?: () => void
 }
 
-export function MonitorsWorkspace({ project, onBack }: MonitorsWorkspaceProps) {
+export function MonitorsWorkspace({ project, onBack, onNavigateToInvestigations }: MonitorsWorkspaceProps) {
   const { token, activeOrg } = useAuth()
 
   // Navigation tab
@@ -733,6 +734,15 @@ export function MonitorsWorkspace({ project, onBack }: MonitorsWorkspaceProps) {
                           >
                             Details
                           </button>
+                          {onNavigateToInvestigations && (
+                            <button
+                              onClick={() => onNavigateToInvestigations()}
+                              className="px-2.5 py-1 bg-indigo-600/20 hover:bg-indigo-600/30 text-indigo-300 text-[11px] font-semibold rounded transition-colors"
+                              title="Investigate with RAG & Governed Actions"
+                            >
+                              Investigate
+                            </button>
+                          )}
                           {f.status === 'OPEN' && (
                             <button
                               onClick={() => handleAcknowledgeFinding(f)}

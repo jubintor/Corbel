@@ -65,8 +65,54 @@ async def test_root_index_endpoint(async_client: AsyncClient) -> None:
 
 
 @pytest.mark.asyncio
-async def test_root_health_redirect(async_client: AsyncClient) -> None:
-    """Verify /health redirects to /api/v1/health."""
-    response = await async_client.get("/health", follow_redirects=False)
-    assert response.status_code in (302, 307)
-    assert response.headers["location"] == "/api/v1/health"
+async def test_root_health_direct(async_client: AsyncClient) -> None:
+    """Verify /health returns HTTP 200 directly without redirect for cloud probers (P1-LIM-013)."""
+    with patch("corbel.api.v1.endpoints.health.check_database_health") as mock_check:
+        mock_check.return_value = (True, "PostgreSQL connection pool healthy", 1.2)
+        response = await async_client.get("/health", follow_redirects=False)
+        assert response.status_code == 200
+        data = response.json()
+        assert data["status"] == "healthy"
+        assert data["database"]["status"] == "connected"
+
+
+@pytest.mark.asyncio
+async def test_live_database_health_integration() -> None:
+    """Genuine unmocked integration test verifying real PostgreSQL connectivity and metadata (P1-LIM-010, P1-LIM-012)."""
+    from corbel.core.database import check_database_health
+
+    is_healthy, message, latency_ms = await check_database_health()
+    assert is_healthy is True
+    assert "operational" in message.lower()
+    assert latency_ms > 0
+
+
+@pytest.mark.asyncio
+async def test_database_health_timeout() -> None:
+    """Verify database health check enforces timeout on unresponsive connections (P1-LIM-009)."""
+    import asyncio
+    from unittest.mock import MagicMock
+
+    from corbel.core.database import check_database_health
+
+    class HangingAsyncContextManager:
+        async def __aenter__(self) -> "HangingAsyncContextManager":
+            await asyncio.sleep(5.0)
+            return self
+
+        async def __aexit__(self, exc_type: object, exc_val: object, exc_tb: object) -> None:
+            pass
+
+    with patch("corbel.core.database.get_engine") as mock_get_engine, \
+         patch("corbel.core.database.get_settings") as mock_settings:
+        mock_engine = MagicMock()
+        mock_engine.connect.return_value = HangingAsyncContextManager()
+        mock_get_engine.return_value = mock_engine
+
+        mock_cfg = MagicMock()
+        mock_cfg.DB_HEALTH_CHECK_TIMEOUT_SECONDS = 0.05
+        mock_settings.return_value = mock_cfg
+
+        is_healthy, message, latency_ms = await check_database_health()
+        assert is_healthy is False
+        assert "timed out" in message

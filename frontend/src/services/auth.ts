@@ -50,11 +50,15 @@ export async function loginUser(email: string, password: string): Promise<TokenR
   return handleResponse<TokenResponse>(res)
 }
 
-export async function refreshTokens(refreshToken: string): Promise<TokenResponse> {
+export async function refreshTokens(refreshToken: string, idempotencyKey?: string): Promise<TokenResponse> {
+  const idemp = idempotencyKey ?? (typeof crypto !== 'undefined' && crypto.randomUUID ? crypto.randomUUID() : `idemp-${Date.now()}-${Math.random().toString(36).slice(2)}`)
   const res = await fetch(`${API_BASE_URL}/api/v1/auth/refresh`, {
     method: 'POST',
     headers: { 'Content-Type': 'application/json' },
-    body: JSON.stringify({ refresh_token: refreshToken }),
+    body: JSON.stringify({
+      refresh_token: refreshToken,
+      idempotency_key: idemp,
+    }),
   })
   return handleResponse<TokenResponse>(res)
 }

@@ -31,7 +31,7 @@ class UserRegisterRequest(BaseModel):
     """Payload for registering a new user."""
 
     email: str = Field(..., description="User corporate or standard email address")
-    password: str = Field(..., min_length=8, description="Plaintext password (minimum 8 characters)")
+    password: str = Field(..., min_length=8, max_length=72, description="Plaintext password (8-72 bytes)")
     full_name: str = Field(..., min_length=1, max_length=255, description="Full human name")
 
     @field_validator("email")
@@ -41,6 +41,16 @@ class UserRegisterRequest(BaseModel):
         if not re.match(r"^[^@\s]+@[^@\s]+\.[^@\s]+$", clean):
             raise ValueError("Invalid email address format")
         return clean
+
+    @field_validator("password")
+    @classmethod
+    def validate_password_policy(cls, v: str) -> str:
+        pwd_bytes = v.encode("utf-8")
+        if len(pwd_bytes) > 72:
+            raise ValueError("Password exceeds maximum allowable length of 72 bytes")
+        if not re.search(r"[a-zA-Z]", v) or not re.search(r"[^a-zA-Z]", v):
+            raise ValueError("Password must contain at least one letter and at least one number or special character")
+        return v
 
 
 class UserLoginRequest(BaseModel):
@@ -59,6 +69,10 @@ class RefreshTokenRequest(BaseModel):
     """Payload for refreshing an expired access token."""
 
     refresh_token: str = Field(..., description="Valid cryptographically signed refresh token")
+    idempotency_key: str | None = Field(
+        default=None,
+        description="Optional client-generated idempotency key for safe retry and concurrent deduplication",
+    )
 
 
 class TokenResponse(BaseModel):

@@ -20,6 +20,8 @@ class ModelProviderType(str, Enum):
     MOCK = "mock"
     ANTHROPIC = "anthropic"
     OPENAI = "openai"
+    XAI = "xai"
+    LLAMA = "llama"
 
 
 class TokenUsage(BaseModel):

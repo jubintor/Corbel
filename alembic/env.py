@@ -5,35 +5,6 @@ from logging.config import fileConfig
 from sqlalchemy import create_engine, pool
 
 from alembic import context
-from corbel.core.config import get_settings
-from corbel.core.database import Base
-from corbel.core.models import SystemMetadata  # noqa: F401 - Register models with Base.metadata
-from corbel.domains.data_intelligence.models import (  # noqa: F401 - Register Phase 3 models
-    Dataset,
-    DatasetVersion,
-    DataSource,
-)
-from corbel.domains.ontology.models import (  # noqa: F401 - Register Phase 4 models
-    BusinessObject,
-    Property,
-    PropertyMapping,
-    Relationship,
-)
-from corbel.domains.query.models import (  # noqa: F401 - Register Phase 5 models
-    QueryExecution,
-)
-from corbel.domains.process_intelligence.models import (  # noqa: F401 - Register Phase 6 models
-    Process,
-    ProcessCase,
-    ProcessEvent,
-    ProcessEventDatasetVersion,
-)
-from corbel.domains.monitors.models import (  # noqa: F401 - Register Phase 7 models
-    BusinessRule,
-    Finding,
-    Monitor,
-    MonitorEvaluation,
-)
 from corbel.ai.models import (  # noqa: F401 - Register Phase 8 AI infrastructure models
     CostRecord,
     EvaluationDataset,
@@ -44,6 +15,46 @@ from corbel.ai.models import (  # noqa: F401 - Register Phase 8 AI infrastructur
     PromptVersion,
     TaskExecution,
     WorkflowExecution,
+)
+from corbel.core.config import get_settings
+from corbel.core.database import Base
+from corbel.core.models import SystemMetadata  # noqa: F401 - Register models with Base.metadata
+from corbel.domains.data_intelligence.models import (  # noqa: F401 - Register Phase 3 models
+    Dataset,
+    DatasetVersion,
+    DataSource,
+)
+from corbel.domains.governance.models import (  # noqa: F401 - Register Phase 9 governance & RAG models
+    Action,
+    ActionExecution,
+    Approval,
+    AuditEvent,
+    Document,
+    DocumentChunk,
+    Investigation,
+    InvestigationEvidence,
+    Recommendation,
+)
+from corbel.domains.monitors.models import (  # noqa: F401 - Register Phase 7 models
+    BusinessRule,
+    Finding,
+    Monitor,
+    MonitorEvaluation,
+)
+from corbel.domains.ontology.models import (  # noqa: F401 - Register Phase 4 models
+    BusinessObject,
+    Property,
+    PropertyMapping,
+    Relationship,
+)
+from corbel.domains.process_intelligence.models import (  # noqa: F401 - Register Phase 6 models
+    Process,
+    ProcessCase,
+    ProcessEvent,
+    ProcessEventDatasetVersion,
+)
+from corbel.domains.query.models import (  # noqa: F401 - Register Phase 5 models
+    QueryExecution,
 )
 from corbel.domains.tenancy.models import (  # noqa: F401 - Register Phase 2 tenancy models
     Organization,

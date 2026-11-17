@@ -163,7 +163,22 @@ async def test_refresh_token_reuse_detection_fails(async_client: AsyncClient) ->
     rotated_tokens = first_refresh.json()
     new_refresh_token = rotated_tokens["refresh_token"]
 
-    # Second refresh using OLD token: MUST FAIL WITH 401 (token reuse detected)
+    # Fast-forward revoked_at beyond the 15-second collision grace window to simulate replay attack
+    from corbel.core.database import get_session_factory
+    from corbel.domains.tenancy.models import RefreshToken
+    from corbel.domains.tenancy.security import decode_token
+
+    payload = decode_token(old_refresh_token, expected_type="refresh")
+    old_token_id = uuid.UUID(payload["jti"])
+
+    session_factory = get_session_factory()
+    async with session_factory() as session:
+        target_token = await session.get(RefreshToken, old_token_id)
+        assert target_token is not None
+        target_token.revoked_at = datetime.now(UTC) - timedelta(seconds=20)
+        await session.commit()
+
+    # Second refresh using OLD token outside grace window: MUST FAIL WITH 401 (token reuse detected)
     reuse_attempt = await async_client.post(
         "/api/v1/auth/refresh",
         json={"refresh_token": old_refresh_token},
@@ -400,8 +415,12 @@ async def test_expired_refresh_token_rejected(async_client: AsyncClient) -> None
 
 
 @pytest.mark.anyio
-async def test_concurrent_refresh_requests_cannot_both_succeed(async_client: AsyncClient) -> None:
-    """Verify that concurrent requests with the same refresh token cannot both succeed."""
+async def test_concurrent_refresh_requests_both_succeed_safely(async_client: AsyncClient) -> None:
+    """Verify that concurrent requests with the same refresh token are handled safely (P2-LIM-001).
+
+    The winning request rotates the token, and the competing collision within the grace window
+    receives the encrypted replacement token rather than destroying the user's session.
+    """
     email = unique_email()
     password = "Password123!"
     await async_client.post(
@@ -414,17 +433,25 @@ async def test_concurrent_refresh_requests_cannot_both_succeed(async_client: Asy
     )
     refresh_token = login_res.json()["refresh_token"]
 
-    # Issue two simultaneous refresh requests with the identical refresh token
-    req1 = async_client.post("/api/v1/auth/refresh", json={"refresh_token": refresh_token})
-    req2 = async_client.post("/api/v1/auth/refresh", json={"refresh_token": refresh_token})
+    # Issue two simultaneous refresh requests sharing the operation idempotency key (P2-LIM-001)
+    shared_op_key = f"op-key-{uuid.uuid4().hex}"
+    req1 = async_client.post("/api/v1/auth/refresh", json={"refresh_token": refresh_token, "idempotency_key": shared_op_key})
+    req2 = async_client.post("/api/v1/auth/refresh", json={"refresh_token": refresh_token, "idempotency_key": shared_op_key})
 
-    responses = await asyncio.gather(req1, req2)
-    status_codes = [r.status_code for r in responses]
+    res1, res2 = await asyncio.gather(req1, req2)
 
-    # Exactly one request must succeed (200), and the other must be rejected (401)
-    assert 200 in status_codes
-    assert 401 in status_codes
-    assert status_codes.count(200) == 1
+    # Both requests must succeed (HTTP 200) without session revocation
+    assert res1.status_code == 200
+    assert res2.status_code == 200
+
+    token1 = res1.json()["access_token"]
+    token2 = res2.json()["access_token"]
+
+    # Both access tokens are valid and functional
+    me1 = await async_client.get("/api/v1/auth/me", headers={"Authorization": f"Bearer {token1}"})
+    me2 = await async_client.get("/api/v1/auth/me", headers={"Authorization": f"Bearer {token2}"})
+    assert me1.status_code == 200
+    assert me2.status_code == 200
 
 
 @pytest.mark.anyio

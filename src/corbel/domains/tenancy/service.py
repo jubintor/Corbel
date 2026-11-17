@@ -1,13 +1,16 @@
 """TenancyService handling user registration, authentication, organizations, and projects."""
 
+import secrets
 import uuid
 from collections.abc import Sequence
 from datetime import UTC, datetime, timedelta
 
-from sqlalchemy import func, select, update
+from sqlalchemy import delete, func, select, update
+from sqlalchemy.exc import IntegrityError
 from sqlalchemy.ext.asyncio import AsyncSession
 
 from corbel.core.config import get_settings
+from corbel.core.exceptions import CorbelException
 from corbel.domains.tenancy.exceptions import (
     CrossTenantViolationException,
     InsufficientPermissionException,
@@ -29,11 +32,13 @@ from corbel.domains.tenancy.models import (
     ProjectMember,
     ProjectRole,
     ProjectStatus,
+    RateLimitBucket,
     RefreshToken,
     SessionStatus,
     User,
     UserSession,
 )
+from corbel.domains.tenancy.rate_limiter import RateLimiter, RateLimitExceededException
 from corbel.domains.tenancy.schemas import (
     MemberAddRequest,
     OrganizationCreateRequest,
@@ -47,12 +52,15 @@ from corbel.domains.tenancy.schemas import (
     slugify,
 )
 from corbel.domains.tenancy.security import (
+    DUMMY_BCRYPT_HASH,
     create_access_token,
     create_refresh_token,
     decode_token,
-    hash_password,
+    decrypt_token,
+    encrypt_token,
+    hash_password_async,
     hash_token,
-    verify_password,
+    verify_password_async,
 )
 
 
@@ -66,27 +74,44 @@ class TenancyService:
     # Authentication & User Management
     # ==========================================================================
 
-    async def register_user(self, req: UserRegisterRequest) -> User:
-        """Register a new user account with hashed password."""
+    async def register_user(self, req: UserRegisterRequest, ip_address: str | None = None) -> User:
+        """Register a new user account with hashed password and concurrency safety (P2-LIM-004, P2-LIM-008)."""
+        settings = get_settings()
+        if ip_address:
+            rate_limiter = RateLimiter(self.session)
+            retry_after = await rate_limiter.check_and_record(
+                f"reg:ip:{ip_address}",
+                max_requests=settings.RATE_LIMIT_REGISTER_PER_MINUTE,
+                window_seconds=60,
+            )
+            if retry_after:
+                raise RateLimitExceededException(
+                    message=f"Too many registration attempts. Please retry in {retry_after} seconds.",
+                    retry_after=retry_after,
+                )
+
         # Check if user already exists
         stmt = select(User).where(func.lower(User.email) == req.email.lower())
         result = await self.session.execute(stmt)
         if result.scalar_one_or_none() is not None:
-            raise UserAlreadyExistsException(req.email)
+            raise UserAlreadyExistsException("A user with this email address is already registered.")
 
-        hashed = hash_password(req.password)
+        hashed = await hash_password_async(req.password)
         user = User(
             id=uuid.uuid4(),
             email=req.email.lower(),
             hashed_password=hashed,
             full_name=req.full_name,
             is_active=True,
-            is_superuser=False,
         )
         self.session.add(user)
-        await self.session.commit()
-        await self.session.refresh(user)
-        return user
+        try:
+            await self.session.commit()
+            await self.session.refresh(user)
+            return user
+        except IntegrityError as exc:
+            await self.session.rollback()
+            raise UserAlreadyExistsException("A user with this email address is already registered.") from exc
 
     async def authenticate_user(
         self,
@@ -94,18 +119,59 @@ class TenancyService:
         ip_address: str | None = None,
         user_agent: str | None = None,
     ) -> TokenResponse:
-        """Authenticate user credentials and return access and refresh JWT tokens with persistent session."""
-        stmt = select(User).where(func.lower(User.email) == req.email.lower())
+        """Authenticate user credentials and return access and refresh JWT tokens with persistent session (P2-LIM-003, P2-LIM-004)."""
+        settings = get_settings()
+        rate_limiter = RateLimiter(self.session)
+        email_clean = req.email.strip().lower()
+
+        client_ip = ip_address or "127.0.0.1"
+
+        # 1. Enforce IP-based rate limiting to prevent brute force and bcrypt CPU exhaustion
+        ip_retry = await rate_limiter.check_and_record(
+            f"login:ip:{client_ip}",
+            max_requests=settings.RATE_LIMIT_LOGIN_PER_MINUTE,
+            window_seconds=60,
+        )
+        if ip_retry:
+            raise RateLimitExceededException(
+                message=f"Too many requests from this IP address. Please retry in {ip_retry} seconds.",
+                retry_after=ip_retry,
+            )
+
+        # 2. Check combined Account + IP lockout to prevent cross-IP denial of service (P2-LIM-004)
+        account_ip_key = f"login:account_ip:{email_clean}:{client_ip}"
+        acc_retry = await rate_limiter.is_blocked(account_ip_key)
+        if acc_retry:
+            raise RateLimitExceededException(
+                message=f"Account temporarily locked for this IP due to excessive failed attempts. Please retry in {acc_retry} seconds.",
+                retry_after=acc_retry,
+            )
+
+        # 3. Constant-time credential verification (P2-LIM-003)
+        stmt = select(User).where(func.lower(User.email) == email_clean)
         result = await self.session.execute(stmt)
         user = result.scalar_one_or_none()
 
-        if user is None or not verify_password(req.password, user.hashed_password):
+        target_hash = user.hashed_password if user is not None else DUMMY_BCRYPT_HASH
+        password_matches = await verify_password_async(req.password, target_hash)
+
+        if user is None or not password_matches:
+            # Record failed login attempt for this account from this IP (P2-LIM-004)
+            await rate_limiter.record_failure(
+                account_ip_key,
+                window_seconds=settings.RATE_LIMIT_LOCKOUT_MINUTES * 60,
+                lockout_threshold=settings.RATE_LIMIT_LOGIN_FAILURES_LOCKOUT,
+                lockout_seconds=settings.RATE_LIMIT_LOCKOUT_MINUTES * 60,
+            )
+            await self.session.commit()
             raise InvalidCredentialsException("Invalid email or password")
 
         if not user.is_active:
             raise InvalidCredentialsException("User account is inactive. Please contact your administrator.")
 
-        settings = get_settings()
+        # On successful authentication, reset failed attempts counter for this account and IP (P2-LIM-004)
+        await rate_limiter.reset(account_ip_key)
+
         now_utc = datetime.now(UTC)
         session_expires_at = now_utc + timedelta(days=settings.REFRESH_TOKEN_EXPIRE_DAYS)
 
@@ -147,6 +213,7 @@ class TenancyService:
             family_id=session_id,
             is_revoked=False,
             expires_at=refresh_expires_at,
+            encrypted_replacement_token=None,
         )
         self.session.add(db_token)
         await self.session.commit()
@@ -158,14 +225,12 @@ class TenancyService:
             expires_in=settings.ACCESS_TOKEN_EXPIRE_MINUTES * 60,
         )
 
-    async def refresh_access_token(self, refresh_token: str) -> TokenResponse:
-        """Issue a new access token and rotated refresh token.
-
-        Enforces Refresh Token Rotation (RTR) and single-use semantics via PostgreSQL
-        row locking (SELECT ... WITH FOR UPDATE). If an already-consumed or revoked
-        refresh token is reused, all descendant tokens in the family and the associated
-        session are immediately revoked (replay attack detection) and 401 is returned.
-        """
+    async def refresh_access_token(
+        self,
+        refresh_token: str,
+        idempotency_key: str | None = None,
+    ) -> TokenResponse:
+        """Issue a new access token and rotated refresh token with collision recovery (P2-LIM-001)."""
         payload = decode_token(refresh_token, expected_type="refresh")
         user_id_str = payload.get("sub")
         jti_str = payload.get("jti")
@@ -180,7 +245,7 @@ class TenancyService:
         except ValueError as exc:
             raise InvalidCredentialsException("Invalid token identifier format") from exc
 
-        # 1. Acquire exclusive row lock on RefreshToken to prevent concurrent reuse
+        # 1. Acquire exclusive row lock on RefreshToken to coordinate concurrent rotations
         stmt = (
             select(RefreshToken)
             .where(RefreshToken.id == token_id)
@@ -206,10 +271,46 @@ class TenancyService:
         session_record = session_res.scalar_one_or_none()
 
         now_utc = datetime.now(UTC)
+        settings = get_settings()
 
-        # 3. CHECK REUSE: Is this token already consumed/revoked?
+        # 3. REPLAY vs IDEMPOTENT RETRY HANDLING (P2-LIM-001)
         if token_record.is_revoked:
-            # Replay attack detected! Invalidate the entire session and all family tokens.
+            # Check if this is within the 15-second grace window
+            is_recent_rotation = (
+                token_record.replaced_by is not None
+                and token_record.revoked_at is not None
+                and (now_utc - token_record.revoked_at) <= timedelta(seconds=15)
+            )
+
+            # Idempotency protocol: Only return replacement if supplied key matches the stored hash
+            has_matching_key = (
+                idempotency_key is not None
+                and token_record.idempotency_key_hash is not None
+                and hash_token(idempotency_key) == token_record.idempotency_key_hash
+            )
+
+            if (
+                is_recent_rotation
+                and session_record is not None
+                and session_record.status == SessionStatus.ACTIVE.value
+                and has_matching_key
+                and token_record.encrypted_replacement_token
+            ):
+                # Legitimate client retry: same token, same idempotency key, active session
+                recovered_refresh = decrypt_token(token_record.encrypted_replacement_token)
+                fresh_access_token = create_access_token(
+                    user_id=user_id,
+                    email=payload.get("email", ""),
+                    session_id=session_record.id,
+                )
+                return TokenResponse(
+                    access_token=fresh_access_token,
+                    refresh_token=recovered_refresh,
+                    token_type="bearer",
+                    expires_in=settings.ACCESS_TOKEN_EXPIRE_MINUTES * 60,
+                )
+
+            # Replay / Theft Attempt or Expired Window: Revoke family and session!
             if session_record is not None:
                 session_record.status = SessionStatus.REVOKED.value
                 session_record.revoked_at = now_utc
@@ -220,9 +321,19 @@ class TenancyService:
                 .values(is_revoked=True, revoked_at=now_utc)
             )
             await self.session.commit()
-            raise InvalidCredentialsException(
-                "Refresh token reuse detected. All tokens in this session have been revoked."
-            )
+
+            if is_recent_rotation and idempotency_key is None:
+                raise InvalidCredentialsException(
+                    "Refresh token reuse detected without valid idempotency key. Session revoked."
+                )
+            elif is_recent_rotation and not has_matching_key:
+                raise InvalidCredentialsException(
+                    "Refresh token reuse detected with mismatched idempotency key. Session revoked."
+                )
+            else:
+                raise InvalidCredentialsException(
+                    "Refresh token reuse detected. All tokens in this session have been revoked."
+                )
 
         # 4. Check session validity
         if session_record is None or session_record.status != SessionStatus.ACTIVE.value:
@@ -250,12 +361,8 @@ class TenancyService:
         if user is None or not user.is_active:
             raise InvalidCredentialsException("User account not found or inactive")
 
-        # 7. Valid single-use rotation:
-        # Atomically consume old token
+        # 7. Valid single-use rotation with encrypted replacement caching (P2-LIM-001)
         new_token_id = uuid.uuid4()
-        token_record.is_revoked = True
-        token_record.revoked_at = now_utc
-        token_record.replaced_by = new_token_id
 
         # Issue replacement refresh token
         new_refresh_str, _, _, _, new_expires_at = create_refresh_token(
@@ -266,6 +373,16 @@ class TenancyService:
             token_id=new_token_id,
         )
 
+        if idempotency_key:
+            token_record.idempotency_key_hash = hash_token(idempotency_key)
+        else:
+            token_record.idempotency_key_hash = hash_token(secrets.token_urlsafe(32))
+
+        token_record.is_revoked = True
+        token_record.revoked_at = now_utc
+        token_record.replaced_by = new_token_id
+        token_record.encrypted_replacement_token = encrypt_token(new_refresh_str)
+
         child_record = RefreshToken(
             id=new_token_id,
             session_id=session_record.id,
@@ -274,11 +391,11 @@ class TenancyService:
             family_id=token_record.family_id,
             is_revoked=False,
             expires_at=new_expires_at,
+            encrypted_replacement_token=None,
         )
         self.session.add(child_record)
 
         # Issue replacement access token bound to the active session
-        settings = get_settings()
         new_access_token = create_access_token(
             user_id=user.id,
             email=user.email,
@@ -330,9 +447,8 @@ class TenancyService:
     # ==========================================================================
 
     async def create_organization(self, user_id: uuid.UUID, req: OrganizationCreateRequest) -> Organization:
-        """Create a new organization and grant creator ORG_ADMIN membership."""
+        """Create a new organization and grant creator ORG_ADMIN membership with uniqueness protection (P2-LIM-008)."""
         slug = req.slug or slugify(req.name)
-        # Ensure slug uniqueness
         base_slug = slug
         counter = 1
         while True:
@@ -361,9 +477,17 @@ class TenancyService:
             status=MembershipStatus.ACTIVE.value,
         )
         self.session.add(membership)
-        await self.session.commit()
-        await self.session.refresh(org)
-        return org
+        try:
+            await self.session.commit()
+            await self.session.refresh(org)
+            return org
+        except IntegrityError as exc:
+            await self.session.rollback()
+            raise CorbelException(
+                message=f"Organization slug '{slug}' already exists. Please choose a different name or slug.",
+                status_code=409,
+                error_code="SLUG_CONFLICT",
+            ) from exc
 
     async def get_user_organizations(self, user_id: uuid.UUID) -> list[OrganizationWithRoleResponse]:
         """List all organizations the user is a member of, along with their role and status."""
@@ -444,22 +568,27 @@ class TenancyService:
         required_roles: list[OrgRole] | None = None,
     ) -> OrganizationMember:
         """Verify that user is an ACTIVE member of the active organization, checking role requirements."""
-        stmt = select(OrganizationMember).where(
-            OrganizationMember.organization_id == org_id,
-            OrganizationMember.user_id == user_id,
+        stmt = (
+            select(OrganizationMember, Organization)
+            .join(Organization, Organization.id == OrganizationMember.organization_id)
+            .where(
+                OrganizationMember.organization_id == org_id,
+                OrganizationMember.user_id == user_id,
+            )
         )
         result = await self.session.execute(stmt)
-        membership = result.scalar_one_or_none()
+        row = result.first()
 
-        if membership is None:
+        if row is None:
             raise NotOrganizationMemberException(org_id)
+
+        membership: OrganizationMember = row[0]
+        org: Organization = row[1]
 
         if membership.status != MembershipStatus.ACTIVE.value:
             raise MembershipInactiveException(membership.status)
 
-        # Check org status as well
-        org = await self.session.get(Organization, org_id)
-        if org is None or org.status == OrgStatus.SUSPENDED.value:
+        if org.status == OrgStatus.SUSPENDED.value:
             raise OrganizationSuspendedException(org_id)
 
         if required_roles and membership.role not in [r.value for r in required_roles]:
@@ -482,7 +611,7 @@ class TenancyService:
             .order_by(OrganizationMember.created_at.asc())
         )
         result = await self.session.execute(stmt)
-        return result.all()
+        return result.tuples().all()
 
     async def add_organization_member(
         self,
@@ -561,13 +690,52 @@ class TenancyService:
         await self.session.refresh(member)
         return member
 
+    async def update_member_status(
+        self,
+        org_id: uuid.UUID,
+        actor_id: uuid.UUID,
+        target_user_id: uuid.UUID,
+        new_status: MembershipStatus,
+    ) -> OrganizationMember:
+        """Update member lifecycle status (P2-LIM-007). Requires ORG_ADMIN."""
+        await self.verify_membership(org_id, actor_id, required_roles=[OrgRole.ORG_ADMIN])
+
+        stmt = select(OrganizationMember).where(
+            OrganizationMember.organization_id == org_id,
+            OrganizationMember.user_id == target_user_id,
+        )
+        member = (await self.session.execute(stmt)).scalar_one_or_none()
+        if member is None:
+            raise NotOrganizationMemberException(org_id)
+
+        # Invariant: Prevent suspending or revoking sole active admin
+        if member.role == OrgRole.ORG_ADMIN.value and new_status != MembershipStatus.ACTIVE:
+            admin_count_stmt = select(func.count(OrganizationMember.id)).where(
+                OrganizationMember.organization_id == org_id,
+                OrganizationMember.role == OrgRole.ORG_ADMIN.value,
+                OrganizationMember.status == MembershipStatus.ACTIVE.value,
+            )
+            admin_count = (await self.session.execute(admin_count_stmt)).scalar_one()
+            if admin_count <= 1:
+                raise InsufficientPermissionException("Cannot suspend or revoke the sole active administrator of an organization")
+
+        member.status = new_status.value
+        # Note on P2-LIM-007: Do NOT terminate user sessions globally across other organizations.
+        # Suspension is strictly organization-scoped: authoritative per-request checks
+        # (verify_membership & get_active_tenant_context) immediately deny access to this organization
+        # without disrupting active sessions or access in other organizations.
+
+        await self.session.commit()
+        await self.session.refresh(member)
+        return member
+
     async def remove_member(
         self,
         org_id: uuid.UUID,
         actor_id: uuid.UUID,
         target_user_id: uuid.UUID,
     ) -> None:
-        """Remove or revoke an organization membership (requires ORG_ADMIN). Prevents sole admin removal."""
+        """Remove organization membership and cascade cleanup of project memberships (P2-LIM-002)."""
         await self.verify_membership(org_id, actor_id, required_roles=[OrgRole.ORG_ADMIN])
 
         stmt = select(OrganizationMember).where(
@@ -589,6 +757,13 @@ class TenancyService:
             if admin_count <= 1:
                 raise InsufficientPermissionException("Cannot remove the sole active administrator of an organization")
 
+        # Explicitly delete project memberships for this tenant before member deletion (P2-LIM-002)
+        await self.session.execute(
+            delete(ProjectMember).where(
+                ProjectMember.organization_id == org_id,
+                ProjectMember.user_id == target_user_id,
+            )
+        )
         await self.session.delete(member)
         await self.session.commit()
 
@@ -602,11 +777,16 @@ class TenancyService:
         actor_id: uuid.UUID,
         req: ProjectCreateRequest,
     ) -> Project:
-        """Create a new project workspace strictly scoped to the active organization."""
-        await self.verify_membership(org_id, actor_id)
+        """Create a new project workspace strictly scoped to the active organization (P2-LIM-008, P2-LIM-009)."""
+        org_member = await self.verify_membership(org_id, actor_id)
+
+        # Invariant: Prevent auditors from acquiring project write authority (P2-LIM-009)
+        if org_member.role == OrgRole.AUDITOR.value:
+            raise InsufficientPermissionException(
+                "Auditors hold read-only oversight privileges and are not permitted to create project workspaces"
+            )
 
         slug = req.slug or slugify(req.name)
-        # Ensure project slug uniqueness within the organization
         base_slug = slug
         counter = 1
         while True:
@@ -639,23 +819,46 @@ class TenancyService:
             project_role=ProjectRole.PROJECT_LEAD.value,
         )
         self.session.add(proj_member)
-        await self.session.commit()
-        await self.session.refresh(project)
-        return project
+        try:
+            await self.session.commit()
+            await self.session.refresh(project)
+            return project
+        except IntegrityError as exc:
+            await self.session.rollback()
+            raise CorbelException(
+                message=f"Project slug '{slug}' already exists in this organization. Please choose a different name or slug.",
+                status_code=409,
+                error_code="SLUG_CONFLICT",
+            ) from exc
 
     async def list_projects(
         self,
         org_id: uuid.UUID,
         user_id: uuid.UUID,
     ) -> Sequence[Project]:
-        """List all projects within the authorized organization (Strict Tenant Isolation)."""
-        await self.verify_membership(org_id, user_id)
+        """List projects within the authorized organization respecting project membership (P2-LIM-005)."""
+        org_member = await self.verify_membership(org_id, user_id)
 
-        stmt = (
-            select(Project)
-            .where(Project.organization_id == org_id)
-            .order_by(Project.created_at.desc())
-        )
+        if org_member.role == OrgRole.ORG_ADMIN.value:
+            stmt = (
+                select(Project)
+                .where(Project.organization_id == org_id)
+                .order_by(Project.created_at.desc())
+            )
+        else:
+            stmt = (
+                select(Project)
+                .join(
+                    ProjectMember,
+                    (ProjectMember.project_id == Project.id)
+                    & (ProjectMember.organization_id == org_id),
+                )
+                .where(
+                    Project.organization_id == org_id,
+                    ProjectMember.user_id == user_id,
+                )
+                .order_by(Project.created_at.desc())
+            )
         result = await self.session.execute(stmt)
         return result.scalars().all()
 
@@ -665,8 +868,8 @@ class TenancyService:
         project_id: uuid.UUID,
         user_id: uuid.UUID,
     ) -> Project:
-        """Retrieve a project by ID, strictly enforcing organization ownership."""
-        await self.verify_membership(org_id, user_id)
+        """Retrieve a project by ID, strictly enforcing organization ownership and project access (P2-LIM-005)."""
+        await self.verify_project_access(org_id, project_id, user_id)
 
         stmt = select(Project).where(
             Project.organization_id == org_id,
@@ -741,7 +944,7 @@ class TenancyService:
             raise InsufficientPermissionException("You are not an assigned member of this project")
 
         if min_role and pm.project_role not in [r.value for r in min_role]:
-            raise InsufficientPermissionException(f"Project operation requires one of: {min_role}")
+            raise InsufficientPermissionException(f"Project operation requires one of: {[r.value for r in min_role]}")
 
         return pm
 
@@ -802,8 +1005,8 @@ class TenancyService:
         project_id: uuid.UUID,
         user_id: uuid.UUID,
     ) -> Sequence[tuple[ProjectMember, User]]:
-        """List all members assigned to a project."""
-        await self.get_project(org_id, project_id, user_id)
+        """List all members assigned to a project enforcing project access (P2-LIM-005)."""
+        await self.verify_project_access(org_id, project_id, user_id)
 
         stmt = (
             select(ProjectMember, User)
@@ -815,7 +1018,7 @@ class TenancyService:
             .order_by(ProjectMember.granted_at.asc())
         )
         result = await self.session.execute(stmt)
-        return result.all()
+        return result.tuples().all()
 
     async def remove_project_member(
         self,
@@ -837,3 +1040,95 @@ class TenancyService:
         if pm is not None:
             await self.session.delete(pm)
             await self.session.commit()
+
+    # ==========================================================================
+    # Maintenance & Retention (P2-LIM-006)
+    # ==========================================================================
+
+    async def purge_expired_records(
+        self,
+        retention_days: int = 30,
+        batch_size: int = 500,
+        max_batches: int = 100,
+    ) -> dict[str, int]:
+        """Safely prune expired or revoked refresh tokens, sessions, and rate limit buckets outside retention window using bounded batches (P2-LIM-006)."""
+        now_utc = datetime.now(UTC)
+        cutoff = now_utc - timedelta(days=retention_days)
+
+        # 1. Bounded batch purge of expired/revoked refresh tokens older than cutoff
+        purged_tokens = 0
+        for _ in range(max_batches):
+            token_ids_stmt = (
+                select(RefreshToken.id)
+                .where(
+                    (RefreshToken.expires_at < cutoff)
+                    | (RefreshToken.is_revoked.is_(True) & (RefreshToken.revoked_at < cutoff))
+                )
+                .limit(batch_size)
+                .with_for_update(skip_locked=True)
+            )
+            batch_token_ids = (await self.session.execute(token_ids_stmt)).scalars().all()
+            if not batch_token_ids:
+                break
+
+            await self.session.execute(
+                delete(RefreshToken).where(RefreshToken.id.in_(batch_token_ids))
+            )
+            await self.session.commit()
+            purged_tokens += len(batch_token_ids)
+
+        # 2. Bounded batch purge of expired/revoked sessions older than cutoff
+        purged_sessions = 0
+        for _ in range(max_batches):
+            session_ids_stmt = (
+                select(UserSession.id)
+                .where(
+                    (UserSession.expires_at < cutoff)
+                    | (
+                        (UserSession.status.in_([SessionStatus.EXPIRED.value, SessionStatus.REVOKED.value]))
+                        & (UserSession.created_at < cutoff)
+                    )
+                )
+                .limit(batch_size)
+                .with_for_update(skip_locked=True)
+            )
+            batch_session_ids = (await self.session.execute(session_ids_stmt)).scalars().all()
+            if not batch_session_ids:
+                break
+
+            await self.session.execute(
+                delete(UserSession).where(UserSession.id.in_(batch_session_ids))
+            )
+            await self.session.commit()
+            purged_sessions += len(batch_session_ids)
+
+        # 3. Bounded batch purge of expired rate-limiting buckets older than cutoff
+        purged_rate_limit_buckets = 0
+        for _ in range(max_batches):
+            bucket_keys_stmt = (
+                select(RateLimitBucket.key)
+                .where(
+                    (RateLimitBucket.last_updated < cutoff)
+                    & (
+                        (RateLimitBucket.blocked_until.is_(None))
+                        | (RateLimitBucket.blocked_until < now_utc)
+                    )
+                )
+                .limit(batch_size)
+                .with_for_update(skip_locked=True)
+            )
+            batch_bucket_keys = (await self.session.execute(bucket_keys_stmt)).scalars().all()
+            if not batch_bucket_keys:
+                break
+
+            await self.session.execute(
+                delete(RateLimitBucket).where(RateLimitBucket.key.in_(batch_bucket_keys))
+            )
+            await self.session.commit()
+            purged_rate_limit_buckets += len(batch_bucket_keys)
+
+        return {
+            "purged_refresh_tokens": purged_tokens,
+            "purged_user_sessions": purged_sessions,
+            "purged_rate_limit_buckets": purged_rate_limit_buckets,
+        }
