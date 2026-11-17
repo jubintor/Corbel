@@ -162,6 +162,28 @@ class Settings(BaseSettings):
         description="Maximum row limit permitted for structured query executions",
     )
 
+    # Optional Arize Phoenix Observability Settings (Phase 10, ADR-016)
+    PHOENIX_ENABLED: bool = Field(
+        default=False,
+        description="Enable optional Arize Phoenix AI telemetry and trace export",
+    )
+    PHOENIX_COLLECTOR_ENDPOINT: str = Field(
+        default="http://localhost:6006/v1/traces",
+        description="Arize Phoenix OpenTelemetry OTLP/HTTP collector endpoint",
+    )
+    PHOENIX_PROJECT_NAME: str = Field(
+        default="corbel-ai",
+        description="Arize Phoenix project namespace for spans and traces",
+    )
+    PHOENIX_CAPTURE_PAYLOADS: bool = Field(
+        default=False,
+        description="Capture full prompt payloads in Phoenix traces (default False for sensitive data protection)",
+    )
+    PHOENIX_TIMEOUT_SECONDS: float = Field(
+        default=2.0,
+        description="Timeout in seconds for outbound Phoenix trace spans export",
+    )
+
     model_config = SettingsConfigDict(
         env_file=".env",
         env_file_encoding="utf-8",

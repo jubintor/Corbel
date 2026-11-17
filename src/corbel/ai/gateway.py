@@ -11,6 +11,7 @@ from corbel.ai.providers.anthropic import AnthropicModelProvider
 from corbel.ai.providers.mock import MockModelProvider
 from corbel.ai.providers.openai import OpenAIModelProvider
 from corbel.ai.schemas import ModelProviderType, ModelRequest, ModelResponse
+from corbel.ai.telemetry.phoenix import PhoenixTelemetryAdapter
 from corbel.core.config import Settings, get_settings
 
 logger = logging.getLogger(__name__)
@@ -20,14 +21,23 @@ T = TypeVar("T", bound=BaseModel)
 class AIGateway:
     """Provider-neutral model gateway for Corbel."""
 
-    def __init__(self, settings: Settings | None = None) -> None:
+    def __init__(
+        self,
+        settings: Settings | None = None,
+        phoenix_adapter: PhoenixTelemetryAdapter | None = None,
+    ) -> None:
         self.settings = settings or get_settings()
         self._provider_override: ModelProvider | None = None
         self._mock_provider = MockModelProvider()
+        self.phoenix = phoenix_adapter or PhoenixTelemetryAdapter(settings=self.settings)
 
     def set_provider(self, provider: ModelProvider | None) -> None:
         """Override the active provider (primarily for test fixtures)."""
         self._provider_override = provider
+
+    def set_phoenix_adapter(self, adapter: PhoenixTelemetryAdapter) -> None:
+        """Override the active Phoenix telemetry adapter (primarily for test fixtures)."""
+        self.phoenix = adapter
 
     def get_provider(self) -> ModelProvider:
         """Resolve the active model provider according to configuration."""
@@ -70,6 +80,18 @@ class AIGateway:
             response.token_usage.total_tokens,
             response.latency_ms,
         )
+        # Export telemetry to Arize Phoenix if enabled (non-blocking, fault tolerant)
+        await self.phoenix.export_span(
+            span_name="corbel.ai.gateway.generate_text",
+            model_name=response.model,
+            provider=response.provider,
+            input_tokens=response.token_usage.prompt_tokens,
+            output_tokens=response.token_usage.completion_tokens,
+            latency_ms=response.latency_ms,
+            prompt=request.user_prompt,
+            response_text=response.content,
+            status="SUCCESS",
+        )
         return response
 
     async def generate_structured(
@@ -93,5 +115,17 @@ class AIGateway:
             schema_class.__name__,
             response.token_usage.total_tokens,
             response.latency_ms,
+        )
+        # Export telemetry to Arize Phoenix if enabled (non-blocking, fault tolerant)
+        await self.phoenix.export_span(
+            span_name=f"corbel.ai.gateway.generate_structured[{schema_class.__name__}]",
+            model_name=response.model,
+            provider=response.provider,
+            input_tokens=response.token_usage.prompt_tokens,
+            output_tokens=response.token_usage.completion_tokens,
+            latency_ms=response.latency_ms,
+            prompt=request.user_prompt,
+            response_text=response.content,
+            status="SUCCESS",
         )
         return validated, response

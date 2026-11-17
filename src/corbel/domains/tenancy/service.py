@@ -11,6 +11,7 @@ from sqlalchemy.ext.asyncio import AsyncSession
 
 from corbel.core.config import get_settings
 from corbel.core.exceptions import CorbelException
+from corbel.domains.governance.audit import AuditService
 from corbel.domains.tenancy.exceptions import (
     CrossTenantViolationException,
     InsufficientPermissionException,
@@ -69,6 +70,7 @@ class TenancyService:
 
     def __init__(self, session: AsyncSession) -> None:
         self.session = session
+        self.audit_service = AuditService(session)
 
     # ==========================================================================
     # Authentication & User Management
@@ -477,6 +479,15 @@ class TenancyService:
             status=MembershipStatus.ACTIVE.value,
         )
         self.session.add(membership)
+        await self.audit_service.log_event(
+            organization_id=org.id,
+            project_id=None,
+            actor_id=str(user_id),
+            action_type="ORGANIZATION_CREATED",
+            affected_entity_type="Organization",
+            affected_entity_id=str(org.id),
+            execution_context={"name": org.name, "slug": slug},
+        )
         try:
             await self.session.commit()
             await self.session.refresh(org)
@@ -640,9 +651,22 @@ class TenancyService:
             # Reactivate if previously suspended or revoked
             existing.status = MembershipStatus.ACTIVE.value
             existing.role = req.role.value
-            await self.session.commit()
-            await self.session.refresh(existing)
-            return existing
+            await self.audit_service.log_event(
+                organization_id=org_id,
+                project_id=None,
+                actor_id=str(actor_id),
+                action_type="MEMBER_REACTIVATED",
+                affected_entity_type="OrganizationMember",
+                affected_entity_id=str(existing.id),
+                execution_context={"target_user_id": str(target_user.id), "role": req.role.value},
+            )
+            try:
+                await self.session.commit()
+                await self.session.refresh(existing)
+                return existing
+            except Exception:
+                await self.session.rollback()
+                raise
 
         new_member = OrganizationMember(
             id=uuid.uuid4(),
@@ -652,6 +676,15 @@ class TenancyService:
             status=MembershipStatus.ACTIVE.value,
         )
         self.session.add(new_member)
+        await self.audit_service.log_event(
+            organization_id=org_id,
+            project_id=None,
+            actor_id=str(actor_id),
+            action_type="MEMBER_ADDED",
+            affected_entity_type="OrganizationMember",
+            affected_entity_id=str(new_member.id),
+            execution_context={"target_user_id": str(target_user.id), "role": req.role.value},
+        )
         await self.session.commit()
         await self.session.refresh(new_member)
         return new_member
@@ -685,7 +718,17 @@ class TenancyService:
             if admin_count <= 1:
                 raise InsufficientPermissionException("Cannot demote the sole active administrator of an organization")
 
+        old_role = member.role
         member.role = new_role.value
+        await self.audit_service.log_event(
+            organization_id=org_id,
+            project_id=None,
+            actor_id=str(actor_id),
+            action_type="MEMBER_ROLE_UPDATED",
+            affected_entity_type="OrganizationMember",
+            affected_entity_id=str(member.id),
+            execution_context={"target_user_id": str(target_user_id), "old_role": old_role, "new_role": new_role.value},
+        )
         await self.session.commit()
         await self.session.refresh(member)
         return member
@@ -719,12 +762,22 @@ class TenancyService:
             if admin_count <= 1:
                 raise InsufficientPermissionException("Cannot suspend or revoke the sole active administrator of an organization")
 
+        old_status = member.status
         member.status = new_status.value
         # Note on P2-LIM-007: Do NOT terminate user sessions globally across other organizations.
         # Suspension is strictly organization-scoped: authoritative per-request checks
         # (verify_membership & get_active_tenant_context) immediately deny access to this organization
         # without disrupting active sessions or access in other organizations.
 
+        await self.audit_service.log_event(
+            organization_id=org_id,
+            project_id=None,
+            actor_id=str(actor_id),
+            action_type="MEMBER_STATUS_UPDATED",
+            affected_entity_type="OrganizationMember",
+            affected_entity_id=str(member.id),
+            execution_context={"target_user_id": str(target_user_id), "old_status": old_status, "new_status": new_status.value},
+        )
         await self.session.commit()
         await self.session.refresh(member)
         return member
@@ -763,6 +816,15 @@ class TenancyService:
                 ProjectMember.organization_id == org_id,
                 ProjectMember.user_id == target_user_id,
             )
+        )
+        await self.audit_service.log_event(
+            organization_id=org_id,
+            project_id=None,
+            actor_id=str(actor_id),
+            action_type="MEMBER_REMOVED",
+            affected_entity_type="OrganizationMember",
+            affected_entity_id=str(member.id),
+            execution_context={"target_user_id": str(target_user_id)},
         )
         await self.session.delete(member)
         await self.session.commit()
@@ -819,6 +881,15 @@ class TenancyService:
             project_role=ProjectRole.PROJECT_LEAD.value,
         )
         self.session.add(proj_member)
+        await self.audit_service.log_event(
+            organization_id=org_id,
+            project_id=project.id,
+            actor_id=str(actor_id),
+            action_type="PROJECT_CREATED",
+            affected_entity_type="Project",
+            affected_entity_id=str(project.id),
+            execution_context={"name": project.name, "slug": slug},
+        )
         try:
             await self.session.commit()
             await self.session.refresh(project)
@@ -901,6 +972,15 @@ class TenancyService:
         if req.status is not None:
             project.status = req.status.value
 
+        await self.audit_service.log_event(
+            organization_id=org_id,
+            project_id=project.id,
+            actor_id=str(actor_id),
+            action_type="PROJECT_UPDATED",
+            affected_entity_type="Project",
+            affected_entity_id=str(project.id),
+            execution_context={"name": project.name, "status": project.status},
+        )
         await self.session.commit()
         await self.session.refresh(project)
         return project
@@ -915,6 +995,14 @@ class TenancyService:
         project = await self.get_project(org_id, project_id, actor_id)
         await self.verify_project_access(org_id, project_id, actor_id, min_role=[ProjectRole.PROJECT_LEAD])
 
+        await self.audit_service.log_event(
+            organization_id=org_id,
+            project_id=project.id,
+            actor_id=str(actor_id),
+            action_type="PROJECT_DELETED",
+            affected_entity_type="Project",
+            affected_entity_id=str(project.id),
+        )
         await self.session.delete(project)
         await self.session.commit()
 
@@ -982,10 +1070,29 @@ class TenancyService:
         )
         existing = (await self.session.execute(stmt)).scalar_one_or_none()
         if existing is not None:
+            old_role = existing.project_role
             existing.project_role = role.value
-            await self.session.commit()
-            await self.session.refresh(existing)
-            return existing
+            await self.audit_service.log_event(
+                organization_id=org_id,
+                project_id=project_id,
+                actor_id=str(actor_id),
+                action_type="PROJECT_MEMBER_UPDATED",
+                affected_entity_type="ProjectMember",
+                affected_entity_id=str(existing.id),
+                execution_context={
+                    "target_user_id": str(target_user_id),
+                    "previous_role": old_role,
+                    "new_role": role.value,
+                    "operation_type": "UPDATE",
+                },
+            )
+            try:
+                await self.session.commit()
+                await self.session.refresh(existing)
+                return existing
+            except Exception:
+                await self.session.rollback()
+                raise
 
         pm = ProjectMember(
             id=uuid.uuid4(),
@@ -995,9 +1102,28 @@ class TenancyService:
             project_role=role.value,
         )
         self.session.add(pm)
-        await self.session.commit()
-        await self.session.refresh(pm)
-        return pm
+        await self.session.flush()
+        await self.audit_service.log_event(
+            organization_id=org_id,
+            project_id=project_id,
+            actor_id=str(actor_id),
+            action_type="PROJECT_MEMBER_ADDED",
+            affected_entity_type="ProjectMember",
+            affected_entity_id=str(pm.id),
+            execution_context={
+                "target_user_id": str(target_user_id),
+                "previous_role": None,
+                "new_role": role.value,
+                "operation_type": "ASSIGN",
+            },
+        )
+        try:
+            await self.session.commit()
+            await self.session.refresh(pm)
+            return pm
+        except Exception:
+            await self.session.rollback()
+            raise
 
     async def list_project_members(
         self,
@@ -1038,8 +1164,25 @@ class TenancyService:
         )
         pm = (await self.session.execute(stmt)).scalar_one_or_none()
         if pm is not None:
+            await self.audit_service.log_event(
+                organization_id=org_id,
+                project_id=project_id,
+                actor_id=str(actor_id),
+                action_type="PROJECT_MEMBER_REMOVED",
+                affected_entity_type="ProjectMember",
+                affected_entity_id=str(pm.id),
+                execution_context={
+                    "target_user_id": str(target_user_id),
+                    "role": pm.project_role,
+                    "operation_type": "REMOVE",
+                },
+            )
             await self.session.delete(pm)
-            await self.session.commit()
+            try:
+                await self.session.commit()
+            except Exception:
+                await self.session.rollback()
+                raise
 
     # ==========================================================================
     # Maintenance & Retention (P2-LIM-006)

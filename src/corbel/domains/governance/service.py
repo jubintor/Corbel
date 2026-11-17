@@ -13,6 +13,7 @@ from sqlalchemy.orm import selectinload
 
 from corbel.ai.embeddings import EmbeddingProvider, get_embedding_provider
 from corbel.domains.governance.adapter import SimulatedTargetAdapter, TargetSystemAdapter
+from corbel.domains.governance.audit import AuditService
 from corbel.domains.governance.exceptions import (
     ActionNotFoundException,
     ApprovalNotFoundException,
@@ -55,16 +56,19 @@ from corbel.domains.governance.rag import (
 from corbel.domains.governance.schemas import (
     ActionExecuteRequest,
     ApprovalDecisionRequest,
+    AuditTrailExportResponse,
     DocumentCreateRequest,
     DocumentQueryRequest,
     DocumentQueryResponse,
     DocumentQueryResult,
     InvestigationCreateRequest,
+    OperationalRoiResponse,
     P2PVerticalSliceDemoRequest,
     P2PVerticalSliceDemoResponse,
 )
 from corbel.domains.monitors.models import Finding, FindingStatus
 from corbel.domains.process_intelligence.models import ProcessEvent
+from corbel.domains.tenancy.models import ProjectRole
 from corbel.domains.tenancy.service import TenancyService
 
 logger = logging.getLogger(__name__)
@@ -98,17 +102,19 @@ class GovernanceService:
         self.tenancy_service = tenancy_service
         self.target_adapter = target_adapter or SimulatedTargetAdapter()
         self.embedding_provider = embedding_provider or get_embedding_provider()
+        self.audit_service = AuditService(session)
 
     async def _verify_access(
         self,
         organization_id: uuid.UUID,
         project_id: uuid.UUID,
         user_id: uuid.UUID,
+        min_role: list[ProjectRole] | None = None,
     ) -> Any:
         """Verify organization ownership of project and user membership."""
         await self.tenancy_service.get_project(organization_id, project_id, user_id)
         return await self.tenancy_service.verify_project_access(
-            org_id=organization_id, project_id=project_id, user_id=user_id
+            org_id=organization_id, project_id=project_id, user_id=user_id, min_role=min_role
         )
 
     # ==========================================================================
@@ -126,23 +132,25 @@ class GovernanceService:
         execution_context: dict[str, Any] | None = None,
         actor_type: ActorType = ActorType.USER,
         outcome_status: str = "SUCCESS",
+        correlation_id: str | None = None,
+        canonical_payload_hash: str | None = None,
+        ip_address: str | None = None,
     ) -> AuditEvent:
         """Create an authoritative append-only audit event record in PostgreSQL."""
-        audit_event = AuditEvent(
-            id=uuid.uuid4(),
+        return await self.audit_service.log_event(
             organization_id=organization_id,
             project_id=project_id,
-            actor_type=actor_type.value,
-            actor_id=str(actor_id),
+            actor_id=actor_id,
             action_type=action_type,
             affected_entity_type=affected_entity_type,
-            affected_entity_id=str(affected_entity_id),
-            execution_context_json=execution_context,
+            affected_entity_id=affected_entity_id,
+            execution_context=execution_context,
+            actor_type=actor_type,
             outcome_status=outcome_status,
+            correlation_id=correlation_id,
+            canonical_payload_hash=canonical_payload_hash,
+            ip_address=ip_address,
         )
-        self.session.add(audit_event)
-        await self.session.flush()
-        return audit_event
 
     async def list_audit_events(
         self,
@@ -156,29 +164,52 @@ class GovernanceService:
     ) -> tuple[list[AuditEvent], int]:
         """List audit events scoped to active project with bounded pagination."""
         await self._verify_access(organization_id, project_id, user_id)
-
-        query = select(AuditEvent).where(
-            AuditEvent.organization_id == organization_id,
-            AuditEvent.project_id == project_id,
+        return await self.audit_service.list_events(
+            organization_id=organization_id,
+            project_id=project_id,
+            action_type=action_type,
+            affected_entity_type=affected_entity_type,
+            limit=limit,
+            offset=offset,
         )
-        if action_type:
-            query = query.where(AuditEvent.action_type == action_type)
-        if affected_entity_type:
-            query = query.where(AuditEvent.affected_entity_type == affected_entity_type)
 
-        count_query = select(func.count(AuditEvent.id)).where(
-            AuditEvent.organization_id == organization_id,
-            AuditEvent.project_id == project_id,
+    async def export_audit_trail(
+        self,
+        organization_id: uuid.UUID,
+        project_id: uuid.UUID,
+        user_id: uuid.UUID,
+        limit: int = 1000,
+    ) -> AuditTrailExportResponse:
+        """Export complete audit trail with cryptographic payload verification."""
+        await self._verify_access(
+            organization_id,
+            project_id,
+            user_id,
+            min_role=[ProjectRole.AUDITOR, ProjectRole.PROJECT_LEAD],
         )
-        if action_type:
-            count_query = count_query.where(AuditEvent.action_type == action_type)
-        if affected_entity_type:
-            count_query = count_query.where(AuditEvent.affected_entity_type == affected_entity_type)
-        total = (await self.session.execute(count_query)).scalar_one()
+        return await self.audit_service.export_audit_trail(
+            organization_id=organization_id,
+            project_id=project_id,
+            limit=limit,
+        )
 
-        query = query.order_by(desc(AuditEvent.timestamp)).limit(limit).offset(offset)
-        result = await self.session.execute(query)
-        return list(result.scalars().all()), total
+    async def get_operational_roi(
+        self,
+        organization_id: uuid.UUID,
+        project_id: uuid.UUID,
+        user_id: uuid.UUID,
+    ) -> OperationalRoiResponse:
+        """Calculate operational ROI and MTTR progression metrics for project."""
+        await self._verify_access(
+            organization_id,
+            project_id,
+            user_id,
+            min_role=[ProjectRole.AUDITOR, ProjectRole.PROJECT_LEAD],
+        )
+        return await self.audit_service.get_operational_roi(
+            organization_id=organization_id,
+            project_id=project_id,
+        )
 
     # ==========================================================================
     # 2. Document Ingestion & RAG

@@ -9128,6 +9128,170 @@
         }
       }
     },
+    "/api/v1/projects/{project_id}/audit-events/export": {
+      "get": {
+        "tags": [
+          "Governed Investigation, Approvals & RAG",
+          "Governed Investigation, Approvals & RAG"
+        ],
+        "summary": "Export Authoritative Audit Trail",
+        "description": "Export complete append-only audit trail with cryptographic SHA-256 payload verification for compliance and governance review.",
+        "operationId": "export_audit_trail_api_v1_projects__project_id__audit_events_export_get",
+        "security": [
+          {
+            "HTTPBearer": []
+          }
+        ],
+        "parameters": [
+          {
+            "name": "project_id",
+            "in": "path",
+            "required": true,
+            "schema": {
+              "type": "string",
+              "format": "uuid",
+              "title": "Project Id"
+            }
+          },
+          {
+            "name": "limit",
+            "in": "query",
+            "required": false,
+            "schema": {
+              "type": "integer",
+              "maximum": 5000,
+              "minimum": 1,
+              "default": 1000,
+              "title": "Limit"
+            }
+          },
+          {
+            "name": "X-Organization-ID",
+            "in": "header",
+            "required": false,
+            "schema": {
+              "anyOf": [
+                {
+                  "type": "string"
+                },
+                {
+                  "type": "null"
+                }
+              ],
+              "title": "X-Organization-Id"
+            }
+          }
+        ],
+        "responses": {
+          "200": {
+            "description": "Successful Response",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/AuditTrailExportResponse"
+                }
+              }
+            }
+          },
+          "500": {
+            "description": "Standardized platform error response",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ErrorResponse"
+                }
+              }
+            }
+          },
+          "422": {
+            "description": "Validation Error",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/HTTPValidationError"
+                }
+              }
+            }
+          }
+        }
+      }
+    },
+    "/api/v1/projects/{project_id}/governance/roi": {
+      "get": {
+        "tags": [
+          "Governed Investigation, Approvals & RAG",
+          "Governed Investigation, Approvals & RAG"
+        ],
+        "summary": "Get Operational ROI and MTTR Progression",
+        "description": "Retrieve MTTR reduction, financial impact addressed, AI operational cost, and ROI benchmarks for the project.",
+        "operationId": "get_operational_roi_api_v1_projects__project_id__governance_roi_get",
+        "security": [
+          {
+            "HTTPBearer": []
+          }
+        ],
+        "parameters": [
+          {
+            "name": "project_id",
+            "in": "path",
+            "required": true,
+            "schema": {
+              "type": "string",
+              "format": "uuid",
+              "title": "Project Id"
+            }
+          },
+          {
+            "name": "X-Organization-ID",
+            "in": "header",
+            "required": false,
+            "schema": {
+              "anyOf": [
+                {
+                  "type": "string"
+                },
+                {
+                  "type": "null"
+                }
+              ],
+              "title": "X-Organization-Id"
+            }
+          }
+        ],
+        "responses": {
+          "200": {
+            "description": "Successful Response",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/OperationalRoiResponse"
+                }
+              }
+            }
+          },
+          "500": {
+            "description": "Standardized platform error response",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ErrorResponse"
+                }
+              }
+            }
+          },
+          "422": {
+            "description": "Validation Error",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/HTTPValidationError"
+                }
+              }
+            }
+          }
+        }
+      }
+    },
     "/api/v1/projects/{project_id}/demo/p2p-slice": {
       "post": {
         "tags": [
@@ -9655,6 +9819,28 @@
             ],
             "title": "Execution Context Json"
           },
+          "correlation_id": {
+            "anyOf": [
+              {
+                "type": "string"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "title": "Correlation Id"
+          },
+          "canonical_payload_hash": {
+            "anyOf": [
+              {
+                "type": "string"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "title": "Canonical Payload Hash"
+          },
           "outcome_status": {
             "type": "string",
             "title": "Outcome Status"
@@ -9690,6 +9876,186 @@
         ],
         "title": "AuditEventResponse",
         "description": "Append-only authoritative audit record."
+      },
+      "AuditTrailExportItem": {
+        "properties": {
+          "id": {
+            "type": "string",
+            "format": "uuid",
+            "title": "Id"
+          },
+          "organization_id": {
+            "type": "string",
+            "format": "uuid",
+            "title": "Organization Id"
+          },
+          "project_id": {
+            "anyOf": [
+              {
+                "type": "string",
+                "format": "uuid"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "title": "Project Id"
+          },
+          "actor_type": {
+            "$ref": "#/components/schemas/ActorType"
+          },
+          "actor_id": {
+            "type": "string",
+            "title": "Actor Id"
+          },
+          "action_type": {
+            "type": "string",
+            "title": "Action Type"
+          },
+          "affected_entity_type": {
+            "type": "string",
+            "title": "Affected Entity Type"
+          },
+          "affected_entity_id": {
+            "type": "string",
+            "title": "Affected Entity Id"
+          },
+          "execution_context_json": {
+            "anyOf": [
+              {
+                "additionalProperties": true,
+                "type": "object"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "title": "Execution Context Json"
+          },
+          "correlation_id": {
+            "anyOf": [
+              {
+                "type": "string"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "title": "Correlation Id"
+          },
+          "canonical_payload_hash": {
+            "anyOf": [
+              {
+                "type": "string"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "title": "Canonical Payload Hash"
+          },
+          "outcome_status": {
+            "type": "string",
+            "title": "Outcome Status"
+          },
+          "ip_address": {
+            "anyOf": [
+              {
+                "type": "string"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "title": "Ip Address"
+          },
+          "timestamp": {
+            "type": "string",
+            "format": "date-time",
+            "title": "Timestamp"
+          },
+          "payload_verification_status": {
+            "type": "string",
+            "title": "Payload Verification Status"
+          },
+          "calculated_payload_hash": {
+            "anyOf": [
+              {
+                "type": "string"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "title": "Calculated Payload Hash"
+          }
+        },
+        "type": "object",
+        "required": [
+          "id",
+          "organization_id",
+          "actor_type",
+          "actor_id",
+          "action_type",
+          "affected_entity_type",
+          "affected_entity_id",
+          "outcome_status",
+          "timestamp",
+          "payload_verification_status"
+        ],
+        "title": "AuditTrailExportItem",
+        "description": "Export item with cryptographic payload verification result."
+      },
+      "AuditTrailExportResponse": {
+        "properties": {
+          "organization_id": {
+            "type": "string",
+            "format": "uuid",
+            "title": "Organization Id"
+          },
+          "project_id": {
+            "anyOf": [
+              {
+                "type": "string",
+                "format": "uuid"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "title": "Project Id"
+          },
+          "exported_at": {
+            "type": "string",
+            "format": "date-time",
+            "title": "Exported At"
+          },
+          "total_events": {
+            "type": "integer",
+            "title": "Total Events"
+          },
+          "integrity_verified": {
+            "type": "boolean",
+            "title": "Integrity Verified"
+          },
+          "events": {
+            "items": {
+              "$ref": "#/components/schemas/AuditTrailExportItem"
+            },
+            "type": "array",
+            "title": "Events"
+          }
+        },
+        "type": "object",
+        "required": [
+          "organization_id",
+          "exported_at",
+          "total_events",
+          "integrity_verified",
+          "events"
+        ],
+        "title": "AuditTrailExportResponse",
+        "description": "Complete exported audit trail with canonical payload verification.\n\nNote: integrity_verified reflects per-record canonical payload SHA-256 hash matching\nand does not provide cryptographic tamper evidence against privileged database\nadministrators or record deletion/insertion/reordering attacks (which requires\nexternal cryptographic chaining or anchoring, deferred)."
       },
       "Body_upload_dataset_api_v1_projects__project_id__datasets_upload_post": {
         "properties": {
@@ -13007,6 +13373,91 @@
         "title": "OntologyTraversalResponse",
         "description": "Semantically traversable connected paths from a starting Business Object."
       },
+      "OperationalRoiResponse": {
+        "properties": {
+          "organization_id": {
+            "type": "string",
+            "format": "uuid",
+            "title": "Organization Id"
+          },
+          "project_id": {
+            "anyOf": [
+              {
+                "type": "string",
+                "format": "uuid"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "title": "Project Id"
+          },
+          "incidents_investigated": {
+            "type": "integer",
+            "title": "Incidents Investigated"
+          },
+          "incidents_resolved": {
+            "type": "integer",
+            "title": "Incidents Resolved"
+          },
+          "baseline_mttr_minutes": {
+            "type": "number",
+            "title": "Baseline Mttr Minutes",
+            "description": "Assumed reference baseline MTTR for manual discrepancy resolution (48.0 hours = 2880.0 minutes), not an empirically measured value."
+          },
+          "current_mttr_minutes": {
+            "type": "number",
+            "title": "Current Mttr Minutes",
+            "description": "Realized average MTTR in minutes from detection to terminal successful execution."
+          },
+          "mttr_reduction_percentage": {
+            "type": "number",
+            "title": "Mttr Reduction Percentage",
+            "description": "Percentage reduction in MTTR compared to the reference manual baseline."
+          },
+          "total_financial_impact_addressed_usd": {
+            "type": "number",
+            "title": "Total Financial Impact Addressed Usd",
+            "description": "Total financial value protected or recovered across all successfully resolved findings."
+          },
+          "total_ai_cost_usd": {
+            "type": "number",
+            "title": "Total Ai Cost Usd",
+            "description": "Cumulative AI inference expenditure across model invocations."
+          },
+          "cost_per_successful_task_usd": {
+            "type": "number",
+            "title": "Cost Per Successful Task Usd",
+            "description": "Average AI cost attributed per successfully completed business task."
+          },
+          "benefit_cost_ratio": {
+            "type": "number",
+            "title": "Benefit Cost Ratio",
+            "description": "Benefit-Cost Ratio (BCR) representing financial value protected divided by total AI cost (value multiple)."
+          },
+          "financial_roi_ratio": {
+            "type": "number",
+            "title": "Financial Roi Ratio",
+            "description": "Legacy field alias for benefit_cost_ratio (Benefit-Cost Multiple, not conventional net ROI)."
+          }
+        },
+        "type": "object",
+        "required": [
+          "organization_id",
+          "incidents_investigated",
+          "incidents_resolved",
+          "baseline_mttr_minutes",
+          "current_mttr_minutes",
+          "mttr_reduction_percentage",
+          "total_financial_impact_addressed_usd",
+          "total_ai_cost_usd",
+          "cost_per_successful_task_usd",
+          "benefit_cost_ratio",
+          "financial_roi_ratio"
+        ],
+        "title": "OperationalRoiResponse",
+        "description": "Operational ROI and MTTR progression metrics for governed workflows."
+      },
       "OrgRole": {
         "type": "string",
         "enum": [
@@ -14296,7 +14747,8 @@
           "ANALYST",
           "OPERATOR",
           "APPROVER",
-          "VIEWER"
+          "VIEWER",
+          "AUDITOR"
         ],
         "title": "ProjectRole",
         "description": "Project-scoped roles defining analytical and execution permissions."

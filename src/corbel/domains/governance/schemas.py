@@ -280,6 +280,8 @@ class AuditEventResponse(BaseModel):
     affected_entity_type: str
     affected_entity_id: str
     execution_context_json: dict[str, Any] | None = None
+    correlation_id: str | None = None
+    canonical_payload_hash: str | None = None
     outcome_status: str
     ip_address: str | None = None
     timestamp: datetime
@@ -290,6 +292,71 @@ class AuditEventListResponse(BaseModel):
 
     items: list[AuditEventResponse]
     total: int
+
+
+class AuditTrailExportItem(AuditEventResponse):
+    """Export item with cryptographic payload verification result."""
+
+    payload_verification_status: str
+    calculated_payload_hash: str | None = None
+
+
+class AuditTrailExportResponse(BaseModel):
+    """Complete exported audit trail with canonical payload verification.
+
+    Note: integrity_verified reflects per-record canonical payload SHA-256 hash matching
+    and does not provide cryptographic tamper evidence against privileged database
+    administrators or record deletion/insertion/reordering attacks (which requires
+    external cryptographic chaining or anchoring, deferred).
+    """
+
+    organization_id: uuid.UUID
+    project_id: uuid.UUID | None = None
+    exported_at: datetime
+    total_events: int
+    integrity_verified: bool
+    events: list[AuditTrailExportItem]
+
+
+class OperationalRoiResponse(BaseModel):
+    """Operational ROI and MTTR progression metrics for governed workflows."""
+
+    organization_id: uuid.UUID
+    project_id: uuid.UUID | None = None
+    incidents_investigated: int
+    incidents_resolved: int
+    baseline_mttr_minutes: float = Field(
+        ...,
+        description="Assumed reference baseline MTTR for manual discrepancy resolution (48.0 hours = 2880.0 minutes), not an empirically measured value.",
+    )
+    current_mttr_minutes: float = Field(
+        ...,
+        description="Realized average MTTR in minutes from detection to terminal successful execution.",
+    )
+    mttr_reduction_percentage: float = Field(
+        ...,
+        description="Percentage reduction in MTTR compared to the reference manual baseline.",
+    )
+    total_financial_impact_addressed_usd: float = Field(
+        ...,
+        description="Total financial value protected or recovered across all successfully resolved findings.",
+    )
+    total_ai_cost_usd: float = Field(
+        ...,
+        description="Cumulative AI inference expenditure across model invocations.",
+    )
+    cost_per_successful_task_usd: float = Field(
+        ...,
+        description="Average AI cost attributed per successfully completed business task.",
+    )
+    benefit_cost_ratio: float = Field(
+        ...,
+        description="Benefit-Cost Ratio (BCR) representing financial value protected divided by total AI cost (value multiple).",
+    )
+    financial_roi_ratio: float = Field(
+        ...,
+        description="Legacy field alias for benefit_cost_ratio (Benefit-Cost Multiple, not conventional net ROI).",
+    )
 
 
 # ==============================================================================

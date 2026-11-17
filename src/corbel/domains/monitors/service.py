@@ -15,6 +15,7 @@ from sqlalchemy.orm import selectinload
 from corbel.core.config import get_settings
 from corbel.domains.data_intelligence.models import Dataset
 from corbel.domains.data_intelligence.parser import DatasetParser
+from corbel.domains.governance.audit import AuditService
 from corbel.domains.monitors.exceptions import (
     FindingNotFoundException,
     FindingTransitionException,
@@ -93,6 +94,7 @@ class MonitorService:
         self.session = session
         self.tenancy = tenancy_service
         self.settings = get_settings()
+        self.audit = AuditService(session)
 
     # -------------------------------------------------------------------------
     # Helper Accessors
@@ -228,6 +230,15 @@ class MonitorService:
             )
             self.session.add(rule)
 
+        await self.audit.log_event(
+            organization_id=org_id,
+            project_id=project_id,
+            actor_id=str(user_id),
+            action_type="MONITOR_CREATED",
+            affected_entity_type="Monitor",
+            affected_entity_id=str(monitor.id),
+            execution_context={"name": monitor.name, "target_type": monitor.target_type},
+        )
         await self.session.commit()
         monitor = await self._get_monitor_or_404(project_id, monitor.id)
 
@@ -370,6 +381,15 @@ class MonitorService:
         if req.status is not None:
             monitor.status = req.status.value
 
+        await self.audit.log_event(
+            organization_id=org_id,
+            project_id=project_id,
+            actor_id=str(user_id),
+            action_type="MONITOR_UPDATED",
+            affected_entity_type="Monitor",
+            affected_entity_id=str(monitor.id),
+            execution_context={"name": monitor.name, "status": monitor.status},
+        )
         await self.session.commit()
         monitor = await self._get_monitor_or_404(project_id, monitor.id)
 
@@ -408,6 +428,14 @@ class MonitorService:
             min_role=[ProjectRole.PROJECT_LEAD, ProjectRole.ANALYST, ProjectRole.OPERATOR],
         )
         monitor = await self._get_monitor_or_404(project_id, monitor_id)
+        await self.audit.log_event(
+            organization_id=org_id,
+            project_id=project_id,
+            actor_id=str(user_id),
+            action_type="MONITOR_DELETED",
+            affected_entity_type="Monitor",
+            affected_entity_id=str(monitor.id),
+        )
         await self.session.delete(monitor)
         await self.session.commit()
 
@@ -451,6 +479,15 @@ class MonitorService:
             parameters_json=req.parameters_json,
         )
         self.session.add(rule)
+        await self.audit.log_event(
+            organization_id=org_id,
+            project_id=project_id,
+            actor_id=str(user_id),
+            action_type="MONITOR_RULE_ADDED",
+            affected_entity_type="BusinessRule",
+            affected_entity_id=str(rule.id),
+            execution_context={"monitor_id": str(monitor.id), "rule_code": rule.rule_code},
+        )
         await self.session.commit()
         refreshed_rule = (
             await self.session.execute(select(BusinessRule).where(BusinessRule.id == rule.id))
@@ -479,6 +516,15 @@ class MonitorService:
             raise MonitorValidationException(f"Rule '{rule_id}' not found on monitor.")
         if rule in monitor.rules:
             monitor.rules.remove(rule)
+        await self.audit.log_event(
+            organization_id=org_id,
+            project_id=project_id,
+            actor_id=str(user_id),
+            action_type="MONITOR_RULE_DELETED",
+            affected_entity_type="BusinessRule",
+            affected_entity_id=str(rule_id),
+            execution_context={"monitor_id": str(monitor.id)},
+        )
         await self.session.delete(rule)
         await self.session.commit()
 
@@ -578,6 +624,19 @@ class MonitorService:
             if req.resolution_notes:
                 finding.resolution_notes = req.resolution_notes
 
+        await self.audit.log_event(
+            organization_id=org_id,
+            project_id=project_id,
+            actor_id=str(user_id),
+            action_type="FINDING_STATUS_UPDATED",
+            affected_entity_type="Finding",
+            affected_entity_id=str(finding.id),
+            execution_context={
+                "old_status": current_st.value,
+                "new_status": target_st.value,
+                "resolution_notes": req.resolution_notes,
+            },
+        )
         await self.session.commit()
         refreshed_finding = await self._get_finding_or_404(project_id, finding_id)
         return FindingResponse.model_validate(refreshed_finding)

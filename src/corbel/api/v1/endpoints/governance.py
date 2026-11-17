@@ -19,6 +19,7 @@ from corbel.domains.governance.schemas import (
     ApprovalResponse,
     AuditEventListResponse,
     AuditEventResponse,
+    AuditTrailExportResponse,
     DocumentCreateRequest,
     DocumentQueryRequest,
     DocumentQueryResponse,
@@ -27,6 +28,7 @@ from corbel.domains.governance.schemas import (
     InvestigationCreateRequest,
     InvestigationListResponse,
     InvestigationResponse,
+    OperationalRoiResponse,
     P2PVerticalSliceDemoRequest,
     P2PVerticalSliceDemoResponse,
     RecommendationResponse,
@@ -363,6 +365,44 @@ async def list_audit_events(
     return AuditEventListResponse(
         items=[AuditEventResponse.model_validate(e) for e in events],
         total=total,
+    )
+
+
+@router.get(
+    "/projects/{project_id}/audit-events/export",
+    response_model=AuditTrailExportResponse,
+    summary="Export Authoritative Audit Trail",
+    description="Export complete append-only audit trail with cryptographic SHA-256 payload verification for compliance and governance review.",
+)
+async def export_audit_trail(
+    project_id: uuid.UUID,
+    limit: int = Query(default=1000, ge=1, le=5000),
+    context: TenantContext = Depends(get_active_tenant_context),
+    service: GovernanceService = Depends(get_governance_service),
+) -> AuditTrailExportResponse:
+    return await service.export_audit_trail(
+        organization_id=context.organization_id,
+        project_id=project_id,
+        user_id=context.user.id,
+        limit=limit,
+    )
+
+
+@router.get(
+    "/projects/{project_id}/governance/roi",
+    response_model=OperationalRoiResponse,
+    summary="Get Operational ROI and MTTR Progression",
+    description="Retrieve MTTR reduction, financial impact addressed, AI operational cost, and ROI benchmarks for the project.",
+)
+async def get_operational_roi(
+    project_id: uuid.UUID,
+    context: TenantContext = Depends(get_active_tenant_context),
+    service: GovernanceService = Depends(get_governance_service),
+) -> OperationalRoiResponse:
+    return await service.get_operational_roi(
+        organization_id=context.organization_id,
+        project_id=project_id,
+        user_id=context.user.id,
     )
 
 

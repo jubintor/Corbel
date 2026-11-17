@@ -93,9 +93,46 @@ export interface AuditEventResponse {
   affected_entity_type: string;
   affected_entity_id: string;
   execution_context_json?: Record<string, unknown> | null;
+  correlation_id?: string | null;
+  canonical_payload_hash?: string | null;
   outcome_status: string;
   ip_address?: string | null;
   timestamp: string;
+}
+
+/** Export item with cryptographic payload verification result. */
+export interface AuditTrailExportItem {
+  id: string;
+  organization_id: string;
+  project_id?: string | null;
+  actor_type: ActorType;
+  actor_id: string;
+  action_type: string;
+  affected_entity_type: string;
+  affected_entity_id: string;
+  execution_context_json?: Record<string, unknown> | null;
+  correlation_id?: string | null;
+  canonical_payload_hash?: string | null;
+  outcome_status: string;
+  ip_address?: string | null;
+  timestamp: string;
+  payload_verification_status: string;
+  calculated_payload_hash?: string | null;
+}
+
+/** Complete exported audit trail with canonical payload verification.
+
+Note: integrity_verified reflects per-record canonical payload SHA-256 hash matching
+and does not provide cryptographic tamper evidence against privileged database
+administrators or record deletion/insertion/reordering attacks (which requires
+external cryptographic chaining or anchoring, deferred). */
+export interface AuditTrailExportResponse {
+  organization_id: string;
+  project_id?: string | null;
+  exported_at: string;
+  total_events: number;
+  integrity_verified: boolean;
+  events: AuditTrailExportItem[];
 }
 
 export interface Body_upload_dataset_api_v1_projects__project_id__datasets_upload_post {
@@ -780,6 +817,30 @@ export interface OntologyTraversalResponse {
   incoming_paths?: TraversalStep[];
 }
 
+/** Operational ROI and MTTR progression metrics for governed workflows. */
+export interface OperationalRoiResponse {
+  organization_id: string;
+  project_id?: string | null;
+  incidents_investigated: number;
+  incidents_resolved: number;
+  /** Assumed reference baseline MTTR for manual discrepancy resolution (48.0 hours = 2880.0 minutes), not an empirically measured value. */
+  baseline_mttr_minutes: number;
+  /** Realized average MTTR in minutes from detection to terminal successful execution. */
+  current_mttr_minutes: number;
+  /** Percentage reduction in MTTR compared to the reference manual baseline. */
+  mttr_reduction_percentage: number;
+  /** Total financial value protected or recovered across all successfully resolved findings. */
+  total_financial_impact_addressed_usd: number;
+  /** Cumulative AI inference expenditure across model invocations. */
+  total_ai_cost_usd: number;
+  /** Average AI cost attributed per successfully completed business task. */
+  cost_per_successful_task_usd: number;
+  /** Benefit-Cost Ratio (BCR) representing financial value protected divided by total AI cost (value multiple). */
+  benefit_cost_ratio: number;
+  /** Legacy field alias for benefit_cost_ratio (Benefit-Cost Multiple, not conventional net ROI). */
+  financial_roi_ratio: number;
+}
+
 /** Organization-level roles defining administrative and governance permissions. */
 export type OrgRole = 'ORG_ADMIN' | 'MEMBER' | 'AUDITOR';
 
@@ -1048,7 +1109,7 @@ export interface ProjectResponse {
 }
 
 /** Project-scoped roles defining analytical and execution permissions. */
-export type ProjectRole = 'PROJECT_LEAD' | 'ANALYST' | 'OPERATOR' | 'APPROVER' | 'VIEWER';
+export type ProjectRole = 'PROJECT_LEAD' | 'ANALYST' | 'OPERATOR' | 'APPROVER' | 'VIEWER' | 'AUDITOR';
 
 /** Operational status of a project workspace. */
 export type ProjectStatus = 'ACTIVE' | 'ARCHIVED';

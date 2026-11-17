@@ -62,6 +62,7 @@ class ProjectRole(str, enum.Enum):
     OPERATOR = "OPERATOR"
     APPROVER = "APPROVER"
     VIEWER = "VIEWER"
+    AUDITOR = "AUDITOR"
 
 
 class Organization(Base):

@@ -554,14 +554,6 @@ class AuditEvent(Base):
     """
 
     __tablename__ = "audit_events"
-    __table_args__ = (
-        ForeignKeyConstraint(
-            ["organization_id", "project_id"],
-            ["projects.organization_id", "projects.id"],
-            ondelete="CASCADE",
-            name="fk_audit_events_org_project",
-        ),
-    )
 
     id: Mapped[uuid.UUID] = mapped_column(
         PGUUID(as_uuid=True), primary_key=True, default=uuid.uuid4
@@ -585,6 +577,8 @@ class AuditEvent(Base):
     affected_entity_type: Mapped[str] = mapped_column(String(64), nullable=False, index=True)
     affected_entity_id: Mapped[str] = mapped_column(String(255), nullable=False, index=True)
     execution_context_json: Mapped[dict[str, Any] | None] = mapped_column(JSONB, nullable=True)
+    correlation_id: Mapped[str | None] = mapped_column(String(128), nullable=True, index=True)
+    canonical_payload_hash: Mapped[str | None] = mapped_column(String(64), nullable=True, index=True)
     outcome_status: Mapped[str] = mapped_column(String(32), default="SUCCESS", nullable=False)
     ip_address: Mapped[str | None] = mapped_column(String(64), nullable=True)
     timestamp: Mapped[datetime] = mapped_column(
