@@ -117,7 +117,7 @@ export function AuthProvider({ children }: { children: ReactNode }) {
       }
     }
 
-    initAuth()
+    void initAuth()
   }, [loadOrganizations])
 
   const login = async (email: string, password: string): Promise<void> => {

@@ -120,12 +120,17 @@ export function MonitorsWorkspace({ project, onBack, onNavigateToInvestigations 
   const refreshAll = useCallback(async () => {
     setLoading(true)
     setError(null)
-    await Promise.all([loadMonitors(), loadFindings(), loadEvaluations()])
-    setLoading(false)
+    try {
+      await Promise.all([loadMonitors(), loadFindings(), loadEvaluations()])
+    } catch (err: unknown) {
+      setError(err instanceof Error ? err.message : 'Failed to refresh monitors workspace')
+    } finally {
+      setLoading(false)
+    }
   }, [loadMonitors, loadFindings, loadEvaluations])
 
   useEffect(() => {
-    refreshAll()
+    void refreshAll()
   }, [refreshAll])
 
   // ---------------------------------------------------------------------------

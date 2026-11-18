@@ -1,7 +1,7 @@
 """Pydantic request and response schemas for Data Intelligence & Profiling."""
 
 import uuid
-from datetime import datetime
+from datetime import UTC, datetime
 from typing import Any
 
 from pydantic import BaseModel, ConfigDict, Field
@@ -100,7 +100,7 @@ class ProfilingSummary(BaseModel):
     duplicate_rows_pct: float
     columns: list[ColumnProfile]
     dataset_quality_warnings: list[str] = Field(default_factory=list)
-    profiled_at: datetime = Field(default_factory=datetime.utcnow)
+    profiled_at: datetime = Field(default_factory=lambda: datetime.now(UTC))
 
 
 class DatasetVersionResponse(BaseModel):

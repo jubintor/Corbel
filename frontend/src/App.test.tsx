@@ -81,4 +81,12 @@ describe('Corbel Frontend Shell', () => {
     expect(screen.getByText('Multi-Tenant Workspaces Require Authentication')).toBeInTheDocument()
     expect(screen.getByRole('button', { name: 'Register' })).toBeInTheDocument()
   })
+
+  it('handles health check fetch rejection gracefully without unhandled rejections', async () => {
+    globalThis.fetch = vi.fn().mockRejectedValue(new Error('Network offline')) as unknown as typeof fetch
+    await act(async () => {
+      render(<App />)
+    })
+    expect(screen.getByText('Infrastructure Health Status')).toBeInTheDocument()
+  })
 })

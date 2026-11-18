@@ -10357,6 +10357,1170 @@
           }
         }
       }
+    },
+    "/api/v1/projects/{project_id}/applications/components/catalogue": {
+      "get": {
+        "tags": [
+          "Application Builder & Runtime",
+          "Application Builder"
+        ],
+        "summary": "Get Catalogue Components",
+        "description": "Return catalogue of available components, specifications, and data-binding rules.",
+        "operationId": "get_catalogue_components_api_v1_projects__project_id__applications_components_catalogue_get",
+        "security": [
+          {
+            "HTTPBearer": []
+          }
+        ],
+        "parameters": [
+          {
+            "name": "project_id",
+            "in": "path",
+            "required": true,
+            "schema": {
+              "type": "string",
+              "format": "uuid",
+              "title": "Project Id"
+            }
+          },
+          {
+            "name": "X-Organization-ID",
+            "in": "header",
+            "required": false,
+            "schema": {
+              "anyOf": [
+                {
+                  "type": "string"
+                },
+                {
+                  "type": "null"
+                }
+              ],
+              "title": "X-Organization-Id"
+            }
+          }
+        ],
+        "responses": {
+          "200": {
+            "description": "Successful Response",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "type": "array",
+                  "items": {
+                    "type": "object",
+                    "additionalProperties": true
+                  },
+                  "title": "Response Get Catalogue Components Api V1 Projects  Project Id  Applications Components Catalogue Get"
+                }
+              }
+            }
+          },
+          "500": {
+            "description": "Standardized platform error response",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ErrorResponse"
+                }
+              }
+            }
+          },
+          "422": {
+            "description": "Validation Error",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/HTTPValidationError"
+                }
+              }
+            }
+          }
+        }
+      }
+    },
+    "/api/v1/projects/{project_id}/applications": {
+      "post": {
+        "tags": [
+          "Application Builder & Runtime",
+          "Application Builder"
+        ],
+        "summary": "Create Application",
+        "description": "Create a new application from an approved use-case specification or blank blueprint.",
+        "operationId": "create_application_api_v1_projects__project_id__applications_post",
+        "security": [
+          {
+            "HTTPBearer": []
+          }
+        ],
+        "parameters": [
+          {
+            "name": "project_id",
+            "in": "path",
+            "required": true,
+            "schema": {
+              "type": "string",
+              "format": "uuid",
+              "title": "Project Id"
+            }
+          },
+          {
+            "name": "X-Organization-ID",
+            "in": "header",
+            "required": false,
+            "schema": {
+              "anyOf": [
+                {
+                  "type": "string"
+                },
+                {
+                  "type": "null"
+                }
+              ],
+              "title": "X-Organization-Id"
+            }
+          }
+        ],
+        "requestBody": {
+          "required": true,
+          "content": {
+            "application/json": {
+              "schema": {
+                "$ref": "#/components/schemas/ApplicationCreateRequest"
+              }
+            }
+          }
+        },
+        "responses": {
+          "201": {
+            "description": "Successful Response",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ApplicationDetailResponse"
+                }
+              }
+            }
+          },
+          "500": {
+            "description": "Standardized platform error response",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ErrorResponse"
+                }
+              }
+            }
+          },
+          "422": {
+            "description": "Validation Error",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/HTTPValidationError"
+                }
+              }
+            }
+          }
+        }
+      },
+      "get": {
+        "tags": [
+          "Application Builder & Runtime",
+          "Application Builder"
+        ],
+        "summary": "List Applications",
+        "description": "List all applications in the project.",
+        "operationId": "list_applications_api_v1_projects__project_id__applications_get",
+        "security": [
+          {
+            "HTTPBearer": []
+          }
+        ],
+        "parameters": [
+          {
+            "name": "project_id",
+            "in": "path",
+            "required": true,
+            "schema": {
+              "type": "string",
+              "format": "uuid",
+              "title": "Project Id"
+            }
+          },
+          {
+            "name": "X-Organization-ID",
+            "in": "header",
+            "required": false,
+            "schema": {
+              "anyOf": [
+                {
+                  "type": "string"
+                },
+                {
+                  "type": "null"
+                }
+              ],
+              "title": "X-Organization-Id"
+            }
+          }
+        ],
+        "responses": {
+          "200": {
+            "description": "Successful Response",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "type": "array",
+                  "items": {
+                    "$ref": "#/components/schemas/ApplicationResponse"
+                  },
+                  "title": "Response List Applications Api V1 Projects  Project Id  Applications Get"
+                }
+              }
+            }
+          },
+          "500": {
+            "description": "Standardized platform error response",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ErrorResponse"
+                }
+              }
+            }
+          },
+          "422": {
+            "description": "Validation Error",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/HTTPValidationError"
+                }
+              }
+            }
+          }
+        }
+      }
+    },
+    "/api/v1/projects/{project_id}/applications/{app_id}": {
+      "get": {
+        "tags": [
+          "Application Builder & Runtime",
+          "Application Builder"
+        ],
+        "summary": "Get Application",
+        "description": "Get full details of an application including draft and published definitions.",
+        "operationId": "get_application_api_v1_projects__project_id__applications__app_id__get",
+        "security": [
+          {
+            "HTTPBearer": []
+          }
+        ],
+        "parameters": [
+          {
+            "name": "project_id",
+            "in": "path",
+            "required": true,
+            "schema": {
+              "type": "string",
+              "format": "uuid",
+              "title": "Project Id"
+            }
+          },
+          {
+            "name": "app_id",
+            "in": "path",
+            "required": true,
+            "schema": {
+              "type": "string",
+              "format": "uuid",
+              "title": "App Id"
+            }
+          },
+          {
+            "name": "X-Organization-ID",
+            "in": "header",
+            "required": false,
+            "schema": {
+              "anyOf": [
+                {
+                  "type": "string"
+                },
+                {
+                  "type": "null"
+                }
+              ],
+              "title": "X-Organization-Id"
+            }
+          }
+        ],
+        "responses": {
+          "200": {
+            "description": "Successful Response",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ApplicationDetailResponse"
+                }
+              }
+            }
+          },
+          "500": {
+            "description": "Standardized platform error response",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ErrorResponse"
+                }
+              }
+            }
+          },
+          "422": {
+            "description": "Validation Error",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/HTTPValidationError"
+                }
+              }
+            }
+          }
+        }
+      },
+      "put": {
+        "tags": [
+          "Application Builder & Runtime",
+          "Application Builder"
+        ],
+        "summary": "Update Application",
+        "description": "Update application metadata or draft definition.",
+        "operationId": "update_application_api_v1_projects__project_id__applications__app_id__put",
+        "security": [
+          {
+            "HTTPBearer": []
+          }
+        ],
+        "parameters": [
+          {
+            "name": "project_id",
+            "in": "path",
+            "required": true,
+            "schema": {
+              "type": "string",
+              "format": "uuid",
+              "title": "Project Id"
+            }
+          },
+          {
+            "name": "app_id",
+            "in": "path",
+            "required": true,
+            "schema": {
+              "type": "string",
+              "format": "uuid",
+              "title": "App Id"
+            }
+          },
+          {
+            "name": "X-Organization-ID",
+            "in": "header",
+            "required": false,
+            "schema": {
+              "anyOf": [
+                {
+                  "type": "string"
+                },
+                {
+                  "type": "null"
+                }
+              ],
+              "title": "X-Organization-Id"
+            }
+          }
+        ],
+        "requestBody": {
+          "required": true,
+          "content": {
+            "application/json": {
+              "schema": {
+                "$ref": "#/components/schemas/ApplicationUpdateRequest"
+              }
+            }
+          }
+        },
+        "responses": {
+          "200": {
+            "description": "Successful Response",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ApplicationDetailResponse"
+                }
+              }
+            }
+          },
+          "500": {
+            "description": "Standardized platform error response",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ErrorResponse"
+                }
+              }
+            }
+          },
+          "422": {
+            "description": "Validation Error",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/HTTPValidationError"
+                }
+              }
+            }
+          }
+        }
+      },
+      "delete": {
+        "tags": [
+          "Application Builder & Runtime",
+          "Application Builder"
+        ],
+        "summary": "Delete Application",
+        "description": "Delete an application and all its versions. Requires Project Lead or Admin.",
+        "operationId": "delete_application_api_v1_projects__project_id__applications__app_id__delete",
+        "security": [
+          {
+            "HTTPBearer": []
+          }
+        ],
+        "parameters": [
+          {
+            "name": "project_id",
+            "in": "path",
+            "required": true,
+            "schema": {
+              "type": "string",
+              "format": "uuid",
+              "title": "Project Id"
+            }
+          },
+          {
+            "name": "app_id",
+            "in": "path",
+            "required": true,
+            "schema": {
+              "type": "string",
+              "format": "uuid",
+              "title": "App Id"
+            }
+          },
+          {
+            "name": "X-Organization-ID",
+            "in": "header",
+            "required": false,
+            "schema": {
+              "anyOf": [
+                {
+                  "type": "string"
+                },
+                {
+                  "type": "null"
+                }
+              ],
+              "title": "X-Organization-Id"
+            }
+          }
+        ],
+        "responses": {
+          "204": {
+            "description": "Successful Response"
+          },
+          "500": {
+            "description": "Standardized platform error response",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ErrorResponse"
+                }
+              }
+            }
+          },
+          "422": {
+            "description": "Validation Error",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/HTTPValidationError"
+                }
+              }
+            }
+          }
+        }
+      }
+    },
+    "/api/v1/projects/{project_id}/applications/{app_id}/validate": {
+      "post": {
+        "tags": [
+          "Application Builder & Runtime",
+          "Application Builder"
+        ],
+        "summary": "Validate Application",
+        "description": "Validate application blueprint structure, components, and data bindings.",
+        "operationId": "validate_application_api_v1_projects__project_id__applications__app_id__validate_post",
+        "security": [
+          {
+            "HTTPBearer": []
+          }
+        ],
+        "parameters": [
+          {
+            "name": "project_id",
+            "in": "path",
+            "required": true,
+            "schema": {
+              "type": "string",
+              "format": "uuid",
+              "title": "Project Id"
+            }
+          },
+          {
+            "name": "app_id",
+            "in": "path",
+            "required": true,
+            "schema": {
+              "type": "string",
+              "format": "uuid",
+              "title": "App Id"
+            }
+          },
+          {
+            "name": "X-Organization-ID",
+            "in": "header",
+            "required": false,
+            "schema": {
+              "anyOf": [
+                {
+                  "type": "string"
+                },
+                {
+                  "type": "null"
+                }
+              ],
+              "title": "X-Organization-Id"
+            }
+          }
+        ],
+        "requestBody": {
+          "content": {
+            "application/json": {
+              "schema": {
+                "anyOf": [
+                  {
+                    "$ref": "#/components/schemas/ApplicationDefinition"
+                  },
+                  {
+                    "type": "null"
+                  }
+                ],
+                "title": "Payload"
+              }
+            }
+          }
+        },
+        "responses": {
+          "200": {
+            "description": "Successful Response",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ApplicationValidationResponse"
+                }
+              }
+            }
+          },
+          "500": {
+            "description": "Standardized platform error response",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ErrorResponse"
+                }
+              }
+            }
+          },
+          "422": {
+            "description": "Validation Error",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/HTTPValidationError"
+                }
+              }
+            }
+          }
+        }
+      }
+    },
+    "/api/v1/projects/{project_id}/applications/{app_id}/publish": {
+      "post": {
+        "tags": [
+          "Application Builder & Runtime",
+          "Application Builder"
+        ],
+        "summary": "Publish Application",
+        "description": "Publish the validated draft as an immutable runtime version. Requires Project Lead.",
+        "operationId": "publish_application_api_v1_projects__project_id__applications__app_id__publish_post",
+        "security": [
+          {
+            "HTTPBearer": []
+          }
+        ],
+        "parameters": [
+          {
+            "name": "project_id",
+            "in": "path",
+            "required": true,
+            "schema": {
+              "type": "string",
+              "format": "uuid",
+              "title": "Project Id"
+            }
+          },
+          {
+            "name": "app_id",
+            "in": "path",
+            "required": true,
+            "schema": {
+              "type": "string",
+              "format": "uuid",
+              "title": "App Id"
+            }
+          },
+          {
+            "name": "X-Organization-ID",
+            "in": "header",
+            "required": false,
+            "schema": {
+              "anyOf": [
+                {
+                  "type": "string"
+                },
+                {
+                  "type": "null"
+                }
+              ],
+              "title": "X-Organization-Id"
+            }
+          }
+        ],
+        "requestBody": {
+          "required": true,
+          "content": {
+            "application/json": {
+              "schema": {
+                "$ref": "#/components/schemas/ApplicationPublishRequest"
+              }
+            }
+          }
+        },
+        "responses": {
+          "200": {
+            "description": "Successful Response",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ApplicationDetailResponse"
+                }
+              }
+            }
+          },
+          "500": {
+            "description": "Standardized platform error response",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ErrorResponse"
+                }
+              }
+            }
+          },
+          "422": {
+            "description": "Validation Error",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/HTTPValidationError"
+                }
+              }
+            }
+          }
+        }
+      }
+    },
+    "/api/v1/projects/{project_id}/applications/{app_id}/versions": {
+      "get": {
+        "tags": [
+          "Application Builder & Runtime",
+          "Application Builder"
+        ],
+        "summary": "List Versions",
+        "description": "List all immutable historical versions of an application.",
+        "operationId": "list_versions_api_v1_projects__project_id__applications__app_id__versions_get",
+        "security": [
+          {
+            "HTTPBearer": []
+          }
+        ],
+        "parameters": [
+          {
+            "name": "project_id",
+            "in": "path",
+            "required": true,
+            "schema": {
+              "type": "string",
+              "format": "uuid",
+              "title": "Project Id"
+            }
+          },
+          {
+            "name": "app_id",
+            "in": "path",
+            "required": true,
+            "schema": {
+              "type": "string",
+              "format": "uuid",
+              "title": "App Id"
+            }
+          },
+          {
+            "name": "X-Organization-ID",
+            "in": "header",
+            "required": false,
+            "schema": {
+              "anyOf": [
+                {
+                  "type": "string"
+                },
+                {
+                  "type": "null"
+                }
+              ],
+              "title": "X-Organization-Id"
+            }
+          }
+        ],
+        "responses": {
+          "200": {
+            "description": "Successful Response",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "type": "array",
+                  "items": {
+                    "$ref": "#/components/schemas/ApplicationVersionSummary"
+                  },
+                  "title": "Response List Versions Api V1 Projects  Project Id  Applications  App Id  Versions Get"
+                }
+              }
+            }
+          },
+          "500": {
+            "description": "Standardized platform error response",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ErrorResponse"
+                }
+              }
+            }
+          },
+          "422": {
+            "description": "Validation Error",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/HTTPValidationError"
+                }
+              }
+            }
+          }
+        }
+      }
+    },
+    "/api/v1/projects/{project_id}/applications/{app_id}/versions/{version}": {
+      "get": {
+        "tags": [
+          "Application Builder & Runtime",
+          "Application Builder"
+        ],
+        "summary": "Get Version",
+        "description": "Retrieve an immutable historical version of the application blueprint.",
+        "operationId": "get_version_api_v1_projects__project_id__applications__app_id__versions__version__get",
+        "security": [
+          {
+            "HTTPBearer": []
+          }
+        ],
+        "parameters": [
+          {
+            "name": "project_id",
+            "in": "path",
+            "required": true,
+            "schema": {
+              "type": "string",
+              "format": "uuid",
+              "title": "Project Id"
+            }
+          },
+          {
+            "name": "app_id",
+            "in": "path",
+            "required": true,
+            "schema": {
+              "type": "string",
+              "format": "uuid",
+              "title": "App Id"
+            }
+          },
+          {
+            "name": "version",
+            "in": "path",
+            "required": true,
+            "schema": {
+              "type": "integer",
+              "title": "Version"
+            }
+          },
+          {
+            "name": "X-Organization-ID",
+            "in": "header",
+            "required": false,
+            "schema": {
+              "anyOf": [
+                {
+                  "type": "string"
+                },
+                {
+                  "type": "null"
+                }
+              ],
+              "title": "X-Organization-Id"
+            }
+          }
+        ],
+        "responses": {
+          "200": {
+            "description": "Successful Response",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ApplicationDefinition"
+                }
+              }
+            }
+          },
+          "500": {
+            "description": "Standardized platform error response",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ErrorResponse"
+                }
+              }
+            }
+          },
+          "422": {
+            "description": "Validation Error",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/HTTPValidationError"
+                }
+              }
+            }
+          }
+        }
+      }
+    },
+    "/api/v1/projects/{project_id}/applications/{app_id}/runtime": {
+      "get": {
+        "tags": [
+          "Application Builder & Runtime",
+          "Application Builder"
+        ],
+        "summary": "Get Published Runtime",
+        "description": "Serve the published application blueprint for rendering in the portal.",
+        "operationId": "get_published_runtime_api_v1_projects__project_id__applications__app_id__runtime_get",
+        "security": [
+          {
+            "HTTPBearer": []
+          }
+        ],
+        "parameters": [
+          {
+            "name": "project_id",
+            "in": "path",
+            "required": true,
+            "schema": {
+              "type": "string",
+              "format": "uuid",
+              "title": "Project Id"
+            }
+          },
+          {
+            "name": "app_id",
+            "in": "path",
+            "required": true,
+            "schema": {
+              "type": "string",
+              "format": "uuid",
+              "title": "App Id"
+            }
+          },
+          {
+            "name": "X-Organization-ID",
+            "in": "header",
+            "required": false,
+            "schema": {
+              "anyOf": [
+                {
+                  "type": "string"
+                },
+                {
+                  "type": "null"
+                }
+              ],
+              "title": "X-Organization-Id"
+            }
+          }
+        ],
+        "responses": {
+          "200": {
+            "description": "Successful Response",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/PublishedApplicationRuntimeResponse"
+                }
+              }
+            }
+          },
+          "500": {
+            "description": "Standardized platform error response",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ErrorResponse"
+                }
+              }
+            }
+          },
+          "422": {
+            "description": "Validation Error",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/HTTPValidationError"
+                }
+              }
+            }
+          }
+        }
+      }
+    },
+    "/api/v1/projects/{project_id}/applications/{app_id}/runtime/data": {
+      "post": {
+        "tags": [
+          "Application Builder & Runtime",
+          "Application Builder"
+        ],
+        "summary": "Resolve Runtime Data",
+        "description": "Execute an authorized query for an application component.",
+        "operationId": "resolve_runtime_data_api_v1_projects__project_id__applications__app_id__runtime_data_post",
+        "security": [
+          {
+            "HTTPBearer": []
+          }
+        ],
+        "parameters": [
+          {
+            "name": "project_id",
+            "in": "path",
+            "required": true,
+            "schema": {
+              "type": "string",
+              "format": "uuid",
+              "title": "Project Id"
+            }
+          },
+          {
+            "name": "app_id",
+            "in": "path",
+            "required": true,
+            "schema": {
+              "type": "string",
+              "format": "uuid",
+              "title": "App Id"
+            }
+          },
+          {
+            "name": "X-Organization-ID",
+            "in": "header",
+            "required": false,
+            "schema": {
+              "anyOf": [
+                {
+                  "type": "string"
+                },
+                {
+                  "type": "null"
+                }
+              ],
+              "title": "X-Organization-Id"
+            }
+          }
+        ],
+        "requestBody": {
+          "required": true,
+          "content": {
+            "application/json": {
+              "schema": {
+                "$ref": "#/components/schemas/RuntimeDataQueryRequest"
+              }
+            }
+          }
+        },
+        "responses": {
+          "200": {
+            "description": "Successful Response",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/RuntimeDataQueryResponse"
+                }
+              }
+            }
+          },
+          "500": {
+            "description": "Standardized platform error response",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ErrorResponse"
+                }
+              }
+            }
+          },
+          "422": {
+            "description": "Validation Error",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/HTTPValidationError"
+                }
+              }
+            }
+          }
+        }
+      }
+    },
+    "/api/v1/projects/{project_id}/applications/{app_id}/runtime/action": {
+      "post": {
+        "tags": [
+          "Application Builder & Runtime",
+          "Application Builder"
+        ],
+        "summary": "Execute Runtime Action",
+        "description": "Trigger a governed platform interaction from an application component.",
+        "operationId": "execute_runtime_action_api_v1_projects__project_id__applications__app_id__runtime_action_post",
+        "security": [
+          {
+            "HTTPBearer": []
+          }
+        ],
+        "parameters": [
+          {
+            "name": "project_id",
+            "in": "path",
+            "required": true,
+            "schema": {
+              "type": "string",
+              "format": "uuid",
+              "title": "Project Id"
+            }
+          },
+          {
+            "name": "app_id",
+            "in": "path",
+            "required": true,
+            "schema": {
+              "type": "string",
+              "format": "uuid",
+              "title": "App Id"
+            }
+          },
+          {
+            "name": "X-Organization-ID",
+            "in": "header",
+            "required": false,
+            "schema": {
+              "anyOf": [
+                {
+                  "type": "string"
+                },
+                {
+                  "type": "null"
+                }
+              ],
+              "title": "X-Organization-Id"
+            }
+          }
+        ],
+        "requestBody": {
+          "required": true,
+          "content": {
+            "application/json": {
+              "schema": {
+                "$ref": "#/components/schemas/RuntimeActionExecuteRequest"
+              }
+            }
+          }
+        },
+        "responses": {
+          "200": {
+            "description": "Successful Response",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/RuntimeActionExecuteResponse"
+                }
+              }
+            }
+          },
+          "500": {
+            "description": "Standardized platform error response",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ErrorResponse"
+                }
+              }
+            }
+          },
+          "422": {
+            "description": "Validation Error",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/HTTPValidationError"
+                }
+              }
+            }
+          }
+        }
+      }
     }
   },
   "components": {
@@ -10577,6 +11741,612 @@
         ],
         "title": "ActorType",
         "description": "Actor identity category for append-only audit events."
+      },
+      "AppGovernanceConfig": {
+        "properties": {
+          "required_roles": {
+            "items": {
+              "type": "string"
+            },
+            "type": "array",
+            "title": "Required Roles"
+          },
+          "data_classification": {
+            "type": "string",
+            "title": "Data Classification",
+            "default": "INTERNAL"
+          },
+          "approval_required_actions": {
+            "items": {
+              "type": "string"
+            },
+            "type": "array",
+            "title": "Approval Required Actions"
+          }
+        },
+        "type": "object",
+        "title": "AppGovernanceConfig",
+        "description": "Governance, data classification, and authorization requirements."
+      },
+      "AppPage": {
+        "properties": {
+          "id": {
+            "type": "string",
+            "title": "Id"
+          },
+          "title": {
+            "type": "string",
+            "title": "Title"
+          },
+          "icon": {
+            "anyOf": [
+              {
+                "type": "string"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "title": "Icon"
+          },
+          "sections": {
+            "items": {
+              "$ref": "#/components/schemas/AppSection"
+            },
+            "type": "array",
+            "title": "Sections"
+          }
+        },
+        "type": "object",
+        "required": [
+          "id",
+          "title"
+        ],
+        "title": "AppPage",
+        "description": "An application page containing configured sections."
+      },
+      "AppSection": {
+        "properties": {
+          "id": {
+            "type": "string",
+            "title": "Id"
+          },
+          "title": {
+            "anyOf": [
+              {
+                "type": "string"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "title": "Title"
+          },
+          "description": {
+            "anyOf": [
+              {
+                "type": "string"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "title": "Description"
+          },
+          "layout": {
+            "$ref": "#/components/schemas/LayoutType",
+            "default": "SINGLE"
+          },
+          "components": {
+            "items": {
+              "$ref": "#/components/schemas/ComponentInstance"
+            },
+            "type": "array",
+            "title": "Components"
+          }
+        },
+        "type": "object",
+        "required": [
+          "id"
+        ],
+        "title": "AppSection",
+        "description": "A structural section of an application page."
+      },
+      "ApplicationCreateRequest": {
+        "properties": {
+          "name": {
+            "type": "string",
+            "maxLength": 255,
+            "minLength": 3,
+            "title": "Name"
+          },
+          "description": {
+            "type": "string",
+            "minLength": 5,
+            "title": "Description"
+          },
+          "source_use_case_id": {
+            "anyOf": [
+              {
+                "type": "string",
+                "format": "uuid"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "title": "Source Use Case Id"
+          },
+          "source_specification_version": {
+            "anyOf": [
+              {
+                "type": "integer"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "title": "Source Specification Version"
+          }
+        },
+        "additionalProperties": false,
+        "type": "object",
+        "required": [
+          "name",
+          "description"
+        ],
+        "title": "ApplicationCreateRequest",
+        "description": "Request payload to create a new application."
+      },
+      "ApplicationDefinition": {
+        "properties": {
+          "app_id": {
+            "anyOf": [
+              {
+                "type": "string",
+                "format": "uuid"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "title": "App Id"
+          },
+          "name": {
+            "type": "string",
+            "title": "Name"
+          },
+          "description": {
+            "type": "string",
+            "title": "Description"
+          },
+          "navigation": {
+            "$ref": "#/components/schemas/NavigationConfig"
+          },
+          "pages": {
+            "items": {
+              "$ref": "#/components/schemas/AppPage"
+            },
+            "type": "array",
+            "title": "Pages"
+          },
+          "governance": {
+            "$ref": "#/components/schemas/AppGovernanceConfig"
+          }
+        },
+        "type": "object",
+        "required": [
+          "name",
+          "description",
+          "navigation"
+        ],
+        "title": "ApplicationDefinition",
+        "description": "Complete, validated declarative application blueprint."
+      },
+      "ApplicationDetailResponse": {
+        "properties": {
+          "id": {
+            "type": "string",
+            "format": "uuid",
+            "title": "Id"
+          },
+          "organization_id": {
+            "type": "string",
+            "format": "uuid",
+            "title": "Organization Id"
+          },
+          "project_id": {
+            "type": "string",
+            "format": "uuid",
+            "title": "Project Id"
+          },
+          "name": {
+            "type": "string",
+            "title": "Name"
+          },
+          "description": {
+            "type": "string",
+            "title": "Description"
+          },
+          "source_use_case_id": {
+            "anyOf": [
+              {
+                "type": "string",
+                "format": "uuid"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "title": "Source Use Case Id"
+          },
+          "source_specification_version": {
+            "anyOf": [
+              {
+                "type": "integer"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "title": "Source Specification Version"
+          },
+          "status": {
+            "type": "string",
+            "title": "Status"
+          },
+          "current_version": {
+            "type": "integer",
+            "title": "Current Version"
+          },
+          "published_version": {
+            "anyOf": [
+              {
+                "type": "integer"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "title": "Published Version"
+          },
+          "created_by": {
+            "type": "string",
+            "format": "uuid",
+            "title": "Created By"
+          },
+          "updated_by": {
+            "type": "string",
+            "format": "uuid",
+            "title": "Updated By"
+          },
+          "published_by": {
+            "anyOf": [
+              {
+                "type": "string",
+                "format": "uuid"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "title": "Published By"
+          },
+          "published_at": {
+            "anyOf": [
+              {
+                "type": "string",
+                "format": "date-time"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "title": "Published At"
+          },
+          "created_at": {
+            "type": "string",
+            "format": "date-time",
+            "title": "Created At"
+          },
+          "updated_at": {
+            "type": "string",
+            "format": "date-time",
+            "title": "Updated At"
+          },
+          "draft_definition": {
+            "$ref": "#/components/schemas/ApplicationDefinition"
+          },
+          "published_definition": {
+            "anyOf": [
+              {
+                "$ref": "#/components/schemas/ApplicationDefinition"
+              },
+              {
+                "type": "null"
+              }
+            ]
+          }
+        },
+        "type": "object",
+        "required": [
+          "id",
+          "organization_id",
+          "project_id",
+          "name",
+          "description",
+          "status",
+          "current_version",
+          "created_by",
+          "updated_by",
+          "created_at",
+          "updated_at",
+          "draft_definition"
+        ],
+        "title": "ApplicationDetailResponse",
+        "description": "Detailed application view including current draft and published definition."
+      },
+      "ApplicationPublishRequest": {
+        "properties": {
+          "changelog": {
+            "anyOf": [
+              {
+                "type": "string",
+                "maxLength": 1000
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "title": "Changelog"
+          }
+        },
+        "additionalProperties": false,
+        "type": "object",
+        "title": "ApplicationPublishRequest",
+        "description": "Request payload to publish the validated application draft."
+      },
+      "ApplicationResponse": {
+        "properties": {
+          "id": {
+            "type": "string",
+            "format": "uuid",
+            "title": "Id"
+          },
+          "organization_id": {
+            "type": "string",
+            "format": "uuid",
+            "title": "Organization Id"
+          },
+          "project_id": {
+            "type": "string",
+            "format": "uuid",
+            "title": "Project Id"
+          },
+          "name": {
+            "type": "string",
+            "title": "Name"
+          },
+          "description": {
+            "type": "string",
+            "title": "Description"
+          },
+          "source_use_case_id": {
+            "anyOf": [
+              {
+                "type": "string",
+                "format": "uuid"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "title": "Source Use Case Id"
+          },
+          "source_specification_version": {
+            "anyOf": [
+              {
+                "type": "integer"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "title": "Source Specification Version"
+          },
+          "status": {
+            "type": "string",
+            "title": "Status"
+          },
+          "current_version": {
+            "type": "integer",
+            "title": "Current Version"
+          },
+          "published_version": {
+            "anyOf": [
+              {
+                "type": "integer"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "title": "Published Version"
+          },
+          "created_by": {
+            "type": "string",
+            "format": "uuid",
+            "title": "Created By"
+          },
+          "updated_by": {
+            "type": "string",
+            "format": "uuid",
+            "title": "Updated By"
+          },
+          "published_by": {
+            "anyOf": [
+              {
+                "type": "string",
+                "format": "uuid"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "title": "Published By"
+          },
+          "published_at": {
+            "anyOf": [
+              {
+                "type": "string",
+                "format": "date-time"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "title": "Published At"
+          },
+          "created_at": {
+            "type": "string",
+            "format": "date-time",
+            "title": "Created At"
+          },
+          "updated_at": {
+            "type": "string",
+            "format": "date-time",
+            "title": "Updated At"
+          }
+        },
+        "type": "object",
+        "required": [
+          "id",
+          "organization_id",
+          "project_id",
+          "name",
+          "description",
+          "status",
+          "current_version",
+          "created_by",
+          "updated_by",
+          "created_at",
+          "updated_at"
+        ],
+        "title": "ApplicationResponse",
+        "description": "Summary representation of an application."
+      },
+      "ApplicationUpdateRequest": {
+        "properties": {
+          "name": {
+            "anyOf": [
+              {
+                "type": "string",
+                "maxLength": 255,
+                "minLength": 3
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "title": "Name"
+          },
+          "description": {
+            "anyOf": [
+              {
+                "type": "string",
+                "minLength": 5
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "title": "Description"
+          },
+          "draft_definition": {
+            "anyOf": [
+              {
+                "$ref": "#/components/schemas/ApplicationDefinition"
+              },
+              {
+                "type": "null"
+              }
+            ]
+          }
+        },
+        "additionalProperties": false,
+        "type": "object",
+        "title": "ApplicationUpdateRequest",
+        "description": "Request payload to update application metadata or draft definition."
+      },
+      "ApplicationValidationResponse": {
+        "properties": {
+          "is_valid": {
+            "type": "boolean",
+            "title": "Is Valid"
+          },
+          "errors": {
+            "items": {
+              "$ref": "#/components/schemas/ValidationErrorItem"
+            },
+            "type": "array",
+            "title": "Errors"
+          },
+          "warnings": {
+            "items": {
+              "$ref": "#/components/schemas/ValidationWarningItem"
+            },
+            "type": "array",
+            "title": "Warnings"
+          }
+        },
+        "type": "object",
+        "required": [
+          "is_valid"
+        ],
+        "title": "ApplicationValidationResponse",
+        "description": "Validation report for an application definition."
+      },
+      "ApplicationVersionSummary": {
+        "properties": {
+          "version": {
+            "type": "integer",
+            "title": "Version"
+          },
+          "is_published": {
+            "type": "boolean",
+            "title": "Is Published"
+          },
+          "changelog": {
+            "anyOf": [
+              {
+                "type": "string"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "title": "Changelog"
+          },
+          "created_by": {
+            "type": "string",
+            "format": "uuid",
+            "title": "Created By"
+          },
+          "created_at": {
+            "type": "string",
+            "format": "date-time",
+            "title": "Created At"
+          }
+        },
+        "type": "object",
+        "required": [
+          "version",
+          "is_published",
+          "created_by",
+          "created_at"
+        ],
+        "title": "ApplicationVersionSummary",
+        "description": "Summary of an immutable application version."
       },
       "ApprovalDecisionRequest": {
         "properties": {
@@ -11789,6 +13559,93 @@
         "title": "ColumnSchema",
         "description": "Discovered column metadata."
       },
+      "ComponentInstance": {
+        "properties": {
+          "id": {
+            "type": "string",
+            "title": "Id"
+          },
+          "component_type": {
+            "$ref": "#/components/schemas/ComponentType"
+          },
+          "title": {
+            "anyOf": [
+              {
+                "type": "string"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "title": "Title"
+          },
+          "properties": {
+            "additionalProperties": true,
+            "type": "object",
+            "title": "Properties"
+          },
+          "data_binding": {
+            "anyOf": [
+              {
+                "$ref": "#/components/schemas/DataBindingConfig"
+              },
+              {
+                "type": "null"
+              }
+            ]
+          },
+          "interaction": {
+            "anyOf": [
+              {
+                "$ref": "#/components/schemas/InteractionConfig"
+              },
+              {
+                "type": "null"
+              }
+            ]
+          },
+          "visibility_roles": {
+            "items": {
+              "type": "string"
+            },
+            "type": "array",
+            "title": "Visibility Roles"
+          }
+        },
+        "type": "object",
+        "required": [
+          "id",
+          "component_type"
+        ],
+        "title": "ComponentInstance",
+        "description": "A configured component instance within a section."
+      },
+      "ComponentType": {
+        "type": "string",
+        "enum": [
+          "CONTAINER",
+          "GRID",
+          "TABS",
+          "CARD",
+          "DATA_TABLE",
+          "RECORD_DETAILS",
+          "METRIC_CARD",
+          "STATUS_INDICATOR",
+          "FORM",
+          "TEXT_INPUT",
+          "SELECT_INPUT",
+          "DATE_INPUT",
+          "MONITOR_FINDINGS_LIST",
+          "APPROVAL_QUEUE",
+          "AUDIT_TRAIL_VIEW",
+          "DOCUMENT_SEARCH",
+          "ACTION_BUTTON",
+          "NAV_LINK",
+          "TEXT_BLOCK"
+        ],
+        "title": "ComponentType",
+        "description": "Controlled catalogue of reusable UI component types."
+      },
       "CostSummaryResponse": {
         "properties": {
           "total_cost_usd": {
@@ -11983,6 +13840,67 @@
         "title": "DFGResponse",
         "description": "Directly-Follows Graph representation for process visualizer."
       },
+      "DataBindingConfig": {
+        "properties": {
+          "source_type": {
+            "$ref": "#/components/schemas/DataSourceType"
+          },
+          "entity_name": {
+            "anyOf": [
+              {
+                "type": "string"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "title": "Entity Name"
+          },
+          "filters": {
+            "items": {
+              "additionalProperties": true,
+              "type": "object"
+            },
+            "type": "array",
+            "title": "Filters"
+          },
+          "sort": {
+            "anyOf": [
+              {
+                "additionalProperties": {
+                  "type": "string"
+                },
+                "type": "object"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "title": "Sort"
+          },
+          "limit": {
+            "type": "integer",
+            "title": "Limit",
+            "default": 50
+          },
+          "offset": {
+            "type": "integer",
+            "title": "Offset",
+            "default": 0
+          },
+          "parameters": {
+            "additionalProperties": true,
+            "type": "object",
+            "title": "Parameters"
+          }
+        },
+        "type": "object",
+        "required": [
+          "source_type"
+        ],
+        "title": "DataBindingConfig",
+        "description": "Configuration binding a component to an authorized platform query."
+      },
       "DataSourceCreateRequest": {
         "properties": {
           "name": {
@@ -12064,6 +13982,19 @@
         ],
         "title": "DataSourceResponse",
         "description": "Schema representing a registered Data Source."
+      },
+      "DataSourceType": {
+        "type": "string",
+        "enum": [
+          "ONTOLOGY_OBJECT",
+          "MONITOR_FINDING",
+          "APPROVAL",
+          "DOCUMENT_RAG",
+          "AUDIT_TRAIL",
+          "STATIC"
+        ],
+        "title": "DataSourceType",
+        "description": "Approved platform data-binding source types."
       },
       "DatabaseHealth": {
         "properties": {
@@ -13580,6 +15511,20 @@
         "title": "FindingStatusUpdate",
         "description": "Payload to update the lifecycle state of a finding (e.g. acknowledge or resolve)."
       },
+      "GovernedActionType": {
+        "type": "string",
+        "enum": [
+          "HOLD_INVOICE",
+          "BLOCK_VENDOR",
+          "DISPUTE_CHARGE",
+          "REQUEST_CREDIT",
+          "REQUEST_CREDIT_MEMO",
+          "FLAG_SUPPLIER_REVIEW",
+          "CUSTOM"
+        ],
+        "title": "GovernedActionType",
+        "description": "Controlled catalogue of permitted backend governed action types."
+      },
       "HTTPValidationError": {
         "properties": {
           "detail": {
@@ -13677,6 +15622,90 @@
         "type": "object",
         "title": "InputsAndOutputs",
         "description": "Structured operational I/O definition."
+      },
+      "InteractionActionType": {
+        "type": "string",
+        "enum": [
+          "NAVIGATE",
+          "SUBMIT_FORM",
+          "EXECUTE_ACTION",
+          "APPROVE_ACTION",
+          "REJECT_ACTION",
+          "OPEN_INVESTIGATION",
+          "REFRESH_DATA"
+        ],
+        "title": "InteractionActionType",
+        "description": "Controlled interactive action types for components."
+      },
+      "InteractionConfig": {
+        "properties": {
+          "action_type": {
+            "$ref": "#/components/schemas/InteractionActionType"
+          },
+          "target_page_id": {
+            "anyOf": [
+              {
+                "type": "string"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "title": "Target Page Id"
+          },
+          "governed_action_type": {
+            "anyOf": [
+              {
+                "$ref": "#/components/schemas/GovernedActionType"
+              },
+              {
+                "type": "string"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "title": "Governed Action Type"
+          },
+          "target_adapter_type": {
+            "anyOf": [
+              {
+                "type": "string"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "title": "Target Adapter Type"
+          },
+          "requires_confirmation": {
+            "type": "boolean",
+            "title": "Requires Confirmation",
+            "default": false
+          },
+          "confirmation_message": {
+            "anyOf": [
+              {
+                "type": "string"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "title": "Confirmation Message"
+          },
+          "payload_template": {
+            "additionalProperties": true,
+            "type": "object",
+            "title": "Payload Template"
+          }
+        },
+        "type": "object",
+        "required": [
+          "action_type"
+        ],
+        "title": "InteractionConfig",
+        "description": "Configuration specifying user interaction or action execution."
       },
       "InvestigationCreateRequest": {
         "properties": {
@@ -13896,6 +15925,19 @@
         ],
         "title": "InvestigationStatus",
         "description": "Lifecycle state of an analytical investigation."
+      },
+      "LayoutType": {
+        "type": "string",
+        "enum": [
+          "SINGLE",
+          "TWO_COLUMNS",
+          "THREE_COLUMNS",
+          "GRID",
+          "TABS",
+          "CARD"
+        ],
+        "title": "LayoutType",
+        "description": "Page section layout organization."
       },
       "LivenessResponse": {
         "properties": {
@@ -14462,6 +16504,69 @@
         ],
         "title": "NaturalLanguageQueryResponse",
         "description": "Response containing parsed query AST, compiled SQL, and explanation."
+      },
+      "NavItem": {
+        "properties": {
+          "page_id": {
+            "type": "string",
+            "title": "Page Id"
+          },
+          "label": {
+            "type": "string",
+            "title": "Label"
+          },
+          "icon": {
+            "anyOf": [
+              {
+                "type": "string"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "title": "Icon"
+          },
+          "roles": {
+            "items": {
+              "type": "string"
+            },
+            "type": "array",
+            "title": "Roles"
+          }
+        },
+        "type": "object",
+        "required": [
+          "page_id",
+          "label"
+        ],
+        "title": "NavItem",
+        "description": "A navigation menu item."
+      },
+      "NavigationConfig": {
+        "properties": {
+          "title": {
+            "type": "string",
+            "title": "Title"
+          },
+          "default_page_id": {
+            "type": "string",
+            "title": "Default Page Id"
+          },
+          "items": {
+            "items": {
+              "$ref": "#/components/schemas/NavItem"
+            },
+            "type": "array",
+            "title": "Items"
+          }
+        },
+        "type": "object",
+        "required": [
+          "title",
+          "default_page_id"
+        ],
+        "title": "NavigationConfig",
+        "description": "Application-wide navigation menu structure."
       },
       "NumericStats": {
         "properties": {
@@ -16936,6 +19041,59 @@
         "title": "PropertyUpdateRequest",
         "description": "Schema for modifying an existing Property."
       },
+      "PublishedApplicationRuntimeResponse": {
+        "properties": {
+          "application_id": {
+            "type": "string",
+            "format": "uuid",
+            "title": "Application Id"
+          },
+          "version": {
+            "type": "integer",
+            "title": "Version"
+          },
+          "name": {
+            "type": "string",
+            "title": "Name"
+          },
+          "description": {
+            "type": "string",
+            "title": "Description"
+          },
+          "definition": {
+            "$ref": "#/components/schemas/ApplicationDefinition"
+          },
+          "user_roles": {
+            "items": {
+              "type": "string"
+            },
+            "type": "array",
+            "title": "User Roles"
+          },
+          "published_at": {
+            "anyOf": [
+              {
+                "type": "string",
+                "format": "date-time"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "title": "Published At"
+          }
+        },
+        "type": "object",
+        "required": [
+          "application_id",
+          "version",
+          "name",
+          "description",
+          "definition"
+        ],
+        "title": "PublishedApplicationRuntimeResponse",
+        "description": "Payload served to the published application portal."
+      },
       "QueryExecutionAuditResponse": {
         "properties": {
           "id": {
@@ -17521,6 +19679,158 @@
         ],
         "title": "RuleSeverity",
         "description": "Business impact severity classification for rules and findings."
+      },
+      "RuntimeActionExecuteRequest": {
+        "properties": {
+          "component_id": {
+            "type": "string",
+            "title": "Component Id"
+          },
+          "page_id": {
+            "type": "string",
+            "title": "Page Id"
+          },
+          "action_type": {
+            "$ref": "#/components/schemas/InteractionActionType"
+          },
+          "payload": {
+            "additionalProperties": true,
+            "type": "object",
+            "title": "Payload"
+          },
+          "confirmation_acknowledged": {
+            "type": "boolean",
+            "title": "Confirmation Acknowledged",
+            "default": false
+          }
+        },
+        "additionalProperties": false,
+        "type": "object",
+        "required": [
+          "component_id",
+          "page_id",
+          "action_type"
+        ],
+        "title": "RuntimeActionExecuteRequest",
+        "description": "Request to invoke an interaction or action from an application component."
+      },
+      "RuntimeActionExecuteResponse": {
+        "properties": {
+          "status": {
+            "type": "string",
+            "title": "Status"
+          },
+          "message": {
+            "type": "string",
+            "title": "Message"
+          },
+          "data": {
+            "additionalProperties": true,
+            "type": "object",
+            "title": "Data"
+          },
+          "requires_approval": {
+            "type": "boolean",
+            "title": "Requires Approval",
+            "default": false
+          },
+          "approval_id": {
+            "anyOf": [
+              {
+                "type": "string",
+                "format": "uuid"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "title": "Approval Id"
+          }
+        },
+        "type": "object",
+        "required": [
+          "status",
+          "message"
+        ],
+        "title": "RuntimeActionExecuteResponse",
+        "description": "Outcome of an application component interaction."
+      },
+      "RuntimeDataQueryRequest": {
+        "properties": {
+          "component_id": {
+            "type": "string",
+            "title": "Component Id"
+          },
+          "page_id": {
+            "type": "string",
+            "title": "Page Id"
+          },
+          "parameters": {
+            "additionalProperties": true,
+            "type": "object",
+            "title": "Parameters"
+          },
+          "limit": {
+            "type": "integer",
+            "maximum": 500.0,
+            "minimum": 1.0,
+            "title": "Limit",
+            "default": 50
+          },
+          "offset": {
+            "type": "integer",
+            "minimum": 0.0,
+            "title": "Offset",
+            "default": 0
+          }
+        },
+        "additionalProperties": false,
+        "type": "object",
+        "required": [
+          "component_id",
+          "page_id"
+        ],
+        "title": "RuntimeDataQueryRequest",
+        "description": "Request payload to query data for an application component."
+      },
+      "RuntimeDataQueryResponse": {
+        "properties": {
+          "component_id": {
+            "type": "string",
+            "title": "Component Id"
+          },
+          "columns": {
+            "items": {
+              "type": "string"
+            },
+            "type": "array",
+            "title": "Columns"
+          },
+          "rows": {
+            "items": {
+              "additionalProperties": true,
+              "type": "object"
+            },
+            "type": "array",
+            "title": "Rows"
+          },
+          "total_rows": {
+            "type": "integer",
+            "title": "Total Rows",
+            "default": 0
+          },
+          "execution_time_ms": {
+            "type": "number",
+            "title": "Execution Time Ms",
+            "default": 0.0
+          }
+        },
+        "type": "object",
+        "required": [
+          "component_id"
+        ],
+        "title": "RuntimeDataQueryResponse",
+        "description": "Resolved dataset for an application component."
       },
       "SemanticDiscoveryRequest": {
         "properties": {
@@ -18882,6 +21192,54 @@
           "type"
         ],
         "title": "ValidationError"
+      },
+      "ValidationErrorItem": {
+        "properties": {
+          "path": {
+            "type": "string",
+            "title": "Path"
+          },
+          "message": {
+            "type": "string",
+            "title": "Message"
+          },
+          "code": {
+            "type": "string",
+            "title": "Code"
+          }
+        },
+        "type": "object",
+        "required": [
+          "path",
+          "message",
+          "code"
+        ],
+        "title": "ValidationErrorItem",
+        "description": "A single validation error in the application definition."
+      },
+      "ValidationWarningItem": {
+        "properties": {
+          "path": {
+            "type": "string",
+            "title": "Path"
+          },
+          "message": {
+            "type": "string",
+            "title": "Message"
+          },
+          "code": {
+            "type": "string",
+            "title": "Code"
+          }
+        },
+        "type": "object",
+        "required": [
+          "path",
+          "message",
+          "code"
+        ],
+        "title": "ValidationWarningItem",
+        "description": "A non-blocking validation warning or recommendation."
       },
       "WorkflowExecutionResponse": {
         "properties": {

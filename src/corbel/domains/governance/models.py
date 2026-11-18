@@ -407,10 +407,10 @@ class Action(Base):
         nullable=False,
         index=True,
     )
-    recommendation_id: Mapped[uuid.UUID] = mapped_column(
+    recommendation_id: Mapped[uuid.UUID | None] = mapped_column(
         PGUUID(as_uuid=True),
         ForeignKey("recommendations.id", ondelete="CASCADE"),
-        nullable=False,
+        nullable=True,
         index=True,
     )
     action_type: Mapped[str] = mapped_column(String(64), nullable=False)

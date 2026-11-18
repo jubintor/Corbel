@@ -24,6 +24,7 @@ import {
   runP2PDemoSlice,
 } from '../services/governance'
 import { AuthApiError } from '../services/auth'
+import { generateSecureId } from '../utils/crypto'
 
 interface InvestigationsWorkspaceProps {
   project: Project
@@ -112,7 +113,7 @@ export function InvestigationsWorkspace({ project, onBack }: InvestigationsWorks
   }, [token, activeOrg?.id, project.id, activeTab])
 
   useEffect(() => {
-    loadData()
+    void loadData()
   }, [loadData])
 
   const handleSelectInvestigation = async (inv: Investigation) => {
@@ -150,7 +151,7 @@ export function InvestigationsWorkspace({ project, onBack }: InvestigationsWorks
     setExecutingActionId(action.id)
     setError(null)
     try {
-      const idempotencyKey = `EXEC-${Date.now()}-${Math.random().toString(36).substring(2, 8)}`
+      const idempotencyKey = `EXEC-${Date.now()}-${generateSecureId('action')}`
       const exec = await executeAction(token, activeOrg.id, project.id, action.id, {
         idempotency_key: idempotencyKey,
       })

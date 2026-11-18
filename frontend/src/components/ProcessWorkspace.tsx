@@ -86,7 +86,7 @@ export function ProcessWorkspace({ project, onBack }: ProcessWorkspaceProps) {
   }, [token, activeOrg, project.id, activeProcess])
 
   useEffect(() => {
-    loadProcesses()
+    void loadProcesses()
   }, [loadProcesses])
 
   // Load process analytics when activeProcess changes
@@ -116,7 +116,7 @@ export function ProcessWorkspace({ project, onBack }: ProcessWorkspaceProps) {
 
   useEffect(() => {
     if (activeProcess) {
-      loadProcessData(activeProcess.id)
+      void loadProcessData(activeProcess.id)
     } else {
       setOverview(null)
       setVariantsData(null)

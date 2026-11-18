@@ -4,6 +4,7 @@ from fastapi import APIRouter
 
 from corbel.api.v1.endpoints import (
     ai,
+    apps,
     architect,
     auth,
     datasets,
@@ -30,3 +31,4 @@ api_router.include_router(monitors.router, tags=["Adaptive Monitors & Exception 
 api_router.include_router(ai.router, tags=["AI Infrastructure & Bounded State Machines"])
 api_router.include_router(governance.router, tags=["Governed Investigation, Approvals & RAG"])
 api_router.include_router(architect.router, tags=["Use-Case Architect"])
+api_router.include_router(apps.router, tags=["Application Builder & Runtime"])

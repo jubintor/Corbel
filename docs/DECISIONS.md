@@ -29,6 +29,7 @@
 - [ADR-019: Multi-Layered AI Security, Prompt Injection Defense & Untrusted Content Handling](#adr-019-multi-layered-ai-security-prompt-injection-defense--untrusted-content-handling)
 - [ADR-020: Append-Only Audit Records and Audit Log Integrity](#adr-020-append-only-audit-records-and-audit-log-integrity)
 - [ADR-021: Use-Case Architect Bounded Discovery, Structured Specifications & Governance](#adr-021-use-case-architect-bounded-discovery-structured-specifications--governance)
+- [ADR-022: Declarative Application Blueprints, Component Catalogue & Governed Runtime Execution](#adr-022-declarative-application-blueprints-component-catalogue--governed-runtime-execution)
 - [Architectural Backlog & Open Questions](#architectural-backlog--open-questions)
 
 ---
@@ -447,6 +448,26 @@
 
 ---
 
+### ADR-022: Declarative Application Blueprints, Component Catalogue & Governed Runtime Execution
+- **Status:** Accepted
+- **Context:**
+  - Enterprise users need to create, configure, preview, publish, and operate domain-specific applications through Corbel's UI without writing custom frontend or backend code.
+  - Hardcoding individual domain applications produces brittle silos, prevents reuse, and contradicts the core product principle: *"Build the platform once. Let users build their own applications through the platform."*
+  - Allowing user-authored JavaScript, arbitrary SQL, or raw Python execution introduces severe security vulnerabilities, data leakage risks, and cross-tenant cross-talk.
+- **Decision:** Implement Phase 12 Application Builder based on:
+  1. **Declarative Blueprints (`ApplicationDefinition`):** Fully structured, JSON-serializable blueprints defining pages, responsive grid layouts, component instances, data bindings, interactions, and governance policies. Blueprints contain zero executable code.
+  2. **Deterministic Blueprint Validator:** Strict validation against component catalogue specifications, layout constraints, navigation integrity, and zero-tolerance regex scanning for prohibited code patterns (`<script>`, `javascript:`, `eval()`, `exec()`, `DROP TABLE`, `DELETE FROM`).
+  3. **Catalogue-Driven Extensible Architecture:** Canonical registry of component types (`METRIC_CARD`, `DATA_TABLE`, `BAR_CHART`, `LINE_CHART`, `PIE_CHART`, `ACTION_BUTTON`, `FORM_INPUT`, `PROCESS_GRAPH`, `ALERT_BANNER`, `INVESTIGATION_CARD`), with enforced required properties and supported data sources (`STATIC`, `ONTOLOGY_OBJECT`, `SAVED_QUERY`, `MONITOR_FINDINGS`, `INVESTIGATION_RESULTS`, `PROCESS_METRICS`).
+  4. **Dual Lifecycle & Immutable Versioning:** Applications maintain a mutable `draft_definition_json` for iterative editing in the Visual Builder. Publishing creates an immutable `ApplicationVersion` snapshot (enforcing `(application_id, version)` uniqueness) via row-level locking (`SELECT ... FOR UPDATE`), requiring `PROJECT_LEAD` or `ORG_ADMIN` role.
+  5. **Controlled Runtime Data & Governed Interactions:** The runtime portal dynamically queries data via existing platform services (ontology, structured query service, monitors, investigations) strictly enforcing tenant boundaries. Consequential actions (e.g., `HOLD_INVOICE`, `BLOCK_VENDOR`, `DISPUTE_CHARGE`) enforce mandatory human approval gates (`Approval` records) before dispatch; zero autonomous financial mutations.
+  6. **Complete Audit Trail:** All lifecycle events (`APPLICATION_CREATED`, `APPLICATION_UPDATED`, `APPLICATION_VALIDATED`, `APPLICATION_PUBLISHED`, `APPLICATION_DELETED`, `APPLICATION_ACTION_EXECUTED`) emit immutable audit records in PostgreSQL.
+- **Consequences:**
+  - *Positive:* Safe, low-code extensibility for business users; zero arbitrary code injection; immutable version tracking and auditability; direct reuse of platform capabilities.
+  - *Negative:* Component types and data binding configurations are bounded to the registered catalogue; complex custom UI workflows must be modeled as composed declarative components.
+  - *Neutral:* PostgreSQL remains the authoritative definition store; frontend utilizes pure declarative React component rendering.
+
+---
+
 ## Architectural Backlog & Open Questions
 
 The following technical questions remain open for evaluation during their respective roadmap phases:
@@ -456,3 +477,15 @@ The following technical questions remain open for evaluation during their respec
 | **Q-001** | **Dialect Support for External Connectors** | Use SQLAlchemy / DuckDB read-only connection pooling for external data sources vs. lightweight native drivers. | Phase 3 |
 | **Q-002** | **Interactive Graph Visualization Library** | Evaluate React Flow vs. Cytoscape.js for frontend process variant and ontology rendering. | Phase 4 / Phase 6 |
 | **Q-003** | **Durable Background Worker Mechanism** | Evaluate custom PostgreSQL task state table with polling / `LISTEN/NOTIFY` vs. lightweight Python async task runners before considering external infrastructure. | Phase 3 |
+
+---
+
+## Consolidated Deferred Limitations Register
+
+| ID | Title & Summary | Source / Finding Location | Resolution Status | Resolution Evidence & Notes |
+| :--- | :--- | :--- | :--- | :--- |
+| **DEF-012-001** | **Mandatory Consequential-Action Approval**<br>Centrally enforce human approval for consequential actions (`HOLD_INVOICE`, `BLOCK_VENDOR`, `DISPUTE_CHARGE`) and server-side allowlist validation. | `service.py:801-830`, `schemas.py:75-95`, `validator.py:245-265` | **RESOLVED** | Defined `GovernedActionType` enum and `MANDATORY_CONSEQUENTIAL_ACTIONS`. Blueprints cannot bypass mandatory approval even if `approval_required_actions` is empty. Unrecognized action types rejected with HTTP 400. Verified in `test_def_012_001_mandatory_consequential_action_approval`. |
+| **DEF-012-002** | **Approved Specification Required at App Creation**<br>Reject unapproved or draft specifications at the backend when creating an application from a Phase 11 use case. | `service.py:175-188` | **RESOLVED** | Verified `spec_status == 'APPROVED'` or `use_case.status == 'APPROVED'` on the backend during app creation; returns HTTP 400 if unapproved. Verified in `test_def_012_002_reject_unapproved_use_case_specification`. |
+| **DEF-012-003** | **Component `visibility_roles` Enforced at Runtime**<br>Enforce component visibility roles on backend query/action endpoints and frontend portal. | `service.py:658-675, 835-850`, `PublishedAppPortal.tsx`, `ComponentRenderer.tsx` | **RESOLVED** | Verified user's `project_role` against component `visibility_roles` (with `ORG_ADMIN` override) returning HTTP 403 Forbidden on unauthorized data or interaction calls. Frontend filters restricted components. Verified in backend `test_def_012_003_component_visibility_roles_enforcement` and frontend `PublishedAppPortal.test.tsx`. |
+| **DEF-012-004** | **Audit Trail Offset Pagination**<br>Apply both limit and offset to `AUDIT_TRAIL` runtime data queries. | `service.py:746-775` | **RESOLVED** | Applied `.limit(request.limit).offset(request.offset)` and deterministic secondary ordering `.order_by(desc(AuditEvent.timestamp), desc(AuditEvent.id))`, plus total count calculation. Verified in `test_def_012_004_audit_trail_offset_pagination`. |
+| **DEF-012-005** | **Browser E2E Automated Testing**<br>Automated cross-browser UI testing using Playwright / Cypress. | Frontend application portal & builder | **DEFERRED** | Unit and component test suites pass 100% in Vitest (51 tests). Full end-to-end browser verification will be conducted manually during Phase 13 user-led validation, with automated browser tests deferred to Phase 14 testing harness. |

@@ -1,5 +1,7 @@
 """Data Intelligence domain service managing data sources, dataset ingestion, and profiling."""
 
+import anyio
+import asyncio
 import hashlib
 import shutil
 import uuid
@@ -213,19 +215,19 @@ class DataIntelligenceService:
         max_bytes = self.settings.MAX_UPLOAD_SIZE_BYTES
 
         try:
-            with open(target_file_path, "wb") as out_f:
+            async with await anyio.open_file(target_file_path, "wb") as out_f:
                 while True:
                     chunk = await file.read(65536)  # 64 KB chunks
                     if not chunk:
                         break
                     total_bytes += len(chunk)
                     if total_bytes > max_bytes:
-                        out_f.close()
+                        await out_f.aclose()
                         if target_file_path.exists():
                             target_file_path.unlink()
                         raise FileSizeLimitExceededException(total_bytes, max_bytes)
                     sha256.update(chunk)
-                    out_f.write(chunk)
+                    await out_f.write(chunk)
         except Exception:
             if target_file_path.exists():
                 target_file_path.unlink()

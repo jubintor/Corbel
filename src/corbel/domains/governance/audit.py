@@ -181,6 +181,25 @@ def compute_canonical_payload_hash(payload: Any) -> str:
     return hashlib.sha256(canonical_str.encode("utf-8")).hexdigest()
 
 
+def evaluate_payload_integrity(
+    execution_context_json: dict[str, Any] | None,
+    canonical_payload_hash: str | None,
+) -> tuple[str, str | None]:
+    """Verify cryptographic payload hash integrity and return (status, calculated_hash)."""
+    if execution_context_json is not None:
+        calc_hash = compute_canonical_payload_hash(execution_context_json)
+        if canonical_payload_hash is not None:
+            status = "VERIFIED" if calc_hash == canonical_payload_hash else "HASH_MISMATCH"
+        else:
+            status = "UNHASHED_PAYLOAD"
+        return status, calc_hash
+
+    if canonical_payload_hash is not None:
+        return "UNAVAILABLE_PAYLOAD", None
+
+    return "NO_PAYLOAD", None
+
+
 class AuditService:
     """Authoritative service for recording, querying, and exporting append-only audit events."""
 
@@ -307,21 +326,10 @@ class AuditService:
         export_items: list[AuditTrailExportItem] = []
 
         for ev in events:
-            calc_hash: str | None = None
-
-            if ev.execution_context_json is not None:
-                calc_hash = compute_canonical_payload_hash(ev.execution_context_json)
-                if ev.canonical_payload_hash is not None:
-                    if calc_hash == ev.canonical_payload_hash:
-                        verification_status = "VERIFIED"
-                    else:
-                        verification_status = "HASH_MISMATCH"
-                else:
-                    verification_status = "UNHASHED_PAYLOAD"
-            elif ev.canonical_payload_hash is not None:
-                verification_status = "UNAVAILABLE_PAYLOAD"
-            else:
-                verification_status = "NO_PAYLOAD"
+            verification_status, calc_hash = evaluate_payload_integrity(
+                ev.execution_context_json,
+                ev.canonical_payload_hash,
+            )
 
             item = AuditTrailExportItem(
                 id=ev.id,

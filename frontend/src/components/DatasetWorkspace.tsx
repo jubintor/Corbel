@@ -54,7 +54,7 @@ export function DatasetWorkspace({ project, onBack }: DatasetWorkspaceProps) {
   }, [token, activeOrg?.id, project.id])
 
   useEffect(() => {
-    loadDatasets()
+    void loadDatasets()
   }, [loadDatasets])
 
   // Load preview data when entering preview tab

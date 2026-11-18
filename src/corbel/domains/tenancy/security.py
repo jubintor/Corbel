@@ -17,7 +17,7 @@ from corbel.core.config import get_settings
 from corbel.core.exceptions import CorbelException
 
 # Precomputed 12-round bcrypt hash to ensure constant-time verification for non-existent users (P2-LIM-003)
-DUMMY_BCRYPT_HASH: str = "$2b$12$e80yqNmsm.3fE2/v4JvHteD7q4q8o8j8/sNq0y1r7qg0u2k5y9oW2"
+DUMMY_BCRYPT_HASH: str = "$2b$12$e80yqNmsm.3fE2/v4JvHteD7q4q8o8j8/sNq0y1r7qg0u2k5y9oW2"  # nosemgrep: generic.secrets.security.detected-bcrypt-hash.detected-bcrypt-hash
 
 
 class AuthenticationException(CorbelException):

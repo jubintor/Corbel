@@ -118,7 +118,7 @@ class DeterministicFakeEmbeddingProvider(EmbeddingProvider):
         # Semantic term bias: boost specific dimension buckets based on token hashes
         tokens = [t for t in clean_text.split() if len(t) > 2]
         for token in set(tokens):
-            tok_seed = int(hashlib.md5(token.encode("utf-8")).hexdigest()[:8], 16)
+            tok_seed = int(hashlib.sha256(token.encode("utf-8")).hexdigest()[:8], 16)
             bucket = tok_seed % self._dimension
             raw_vec[bucket] += 3.0
 

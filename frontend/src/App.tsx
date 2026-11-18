@@ -22,19 +22,24 @@ function AppContent() {
     try {
       const data = await fetchSystemHealth()
       setHealth(data)
+    } catch (err: unknown) {
+      console.warn('System health check unavailable:', err)
+      setHealth(null)
     } finally {
       setLoading(false)
     }
   }, [])
 
   useEffect(() => {
-    loadHealth()
+    void loadHealth()
 
     let intervalId: ReturnType<typeof setInterval> | null = null
 
     const startPolling = () => {
       if (!intervalId) {
-        intervalId = setInterval(loadHealth, 30000)
+        intervalId = setInterval(() => {
+          void loadHealth()
+        }, 30000)
       }
     }
 
@@ -49,7 +54,7 @@ function AppContent() {
       if (document.hidden) {
         stopPolling()
       } else {
-        loadHealth()
+        void loadHealth()
         startPolling()
       }
     }

@@ -3,7 +3,7 @@
 import hashlib
 import math
 from collections.abc import Generator
-from datetime import date, datetime
+from datetime import UTC, date, datetime
 from typing import Any
 
 from corbel.domains.data_intelligence.schemas import (
@@ -362,7 +362,7 @@ class DatasetProfiler:
             duplicate_rows_pct=duplicate_pct,
             columns=columns_profile,
             dataset_quality_warnings=dataset_warnings,
-            profiled_at=datetime.utcnow(),
+            profiled_at=datetime.now(UTC),
         )
 
         schemas = [

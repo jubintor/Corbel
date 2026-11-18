@@ -75,7 +75,7 @@ export function ArchitectWorkspace({ project, onBack }: ArchitectWorkspaceProps)
   }, [token, activeOrg, project.id, selectedUseCaseId])
 
   useEffect(() => {
-    loadUseCases()
+    void loadUseCases()
   }, [loadUseCases])
 
   // 2. Load Selected Use Case Details
@@ -106,7 +106,7 @@ export function ArchitectWorkspace({ project, onBack }: ArchitectWorkspaceProps)
 
   useEffect(() => {
     if (selectedUseCaseId) {
-      loadDetail(selectedUseCaseId)
+      void loadDetail(selectedUseCaseId)
     } else {
       setActiveDetail(null)
     }

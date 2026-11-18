@@ -51,6 +51,118 @@ export type ActionType = 'HOLD_INVOICE' | 'REQUEST_CREDIT_MEMO' | 'FLAG_SUPPLIER
 /** Actor identity category for append-only audit events. */
 export type ActorType = 'USER' | 'SYSTEM_WORKER' | 'API_KEY';
 
+/** Governance, data classification, and authorization requirements. */
+export interface AppGovernanceConfig {
+  required_roles?: string[];
+  data_classification?: string;
+  approval_required_actions?: string[];
+}
+
+/** An application page containing configured sections. */
+export interface AppPage {
+  id: string;
+  title: string;
+  icon?: string | null;
+  sections?: AppSection[];
+}
+
+/** A structural section of an application page. */
+export interface AppSection {
+  id: string;
+  title?: string | null;
+  description?: string | null;
+  layout?: LayoutType;
+  components?: ComponentInstance[];
+}
+
+/** Request payload to create a new application. */
+export interface ApplicationCreateRequest {
+  name: string;
+  description: string;
+  source_use_case_id?: string | null;
+  source_specification_version?: number | null;
+}
+
+/** Complete, validated declarative application blueprint. */
+export interface ApplicationDefinition {
+  app_id?: string | null;
+  name: string;
+  description: string;
+  navigation: NavigationConfig;
+  pages?: AppPage[];
+  governance?: AppGovernanceConfig;
+}
+
+/** Detailed application view including current draft and published definition. */
+export interface ApplicationDetailResponse {
+  id: string;
+  organization_id: string;
+  project_id: string;
+  name: string;
+  description: string;
+  source_use_case_id?: string | null;
+  source_specification_version?: number | null;
+  status: string;
+  current_version: number;
+  published_version?: number | null;
+  created_by: string;
+  updated_by: string;
+  published_by?: string | null;
+  published_at?: string | null;
+  created_at: string;
+  updated_at: string;
+  draft_definition: ApplicationDefinition;
+  published_definition?: ApplicationDefinition | null;
+}
+
+/** Request payload to publish the validated application draft. */
+export interface ApplicationPublishRequest {
+  changelog?: string | null;
+}
+
+/** Summary representation of an application. */
+export interface ApplicationResponse {
+  id: string;
+  organization_id: string;
+  project_id: string;
+  name: string;
+  description: string;
+  source_use_case_id?: string | null;
+  source_specification_version?: number | null;
+  status: string;
+  current_version: number;
+  published_version?: number | null;
+  created_by: string;
+  updated_by: string;
+  published_by?: string | null;
+  published_at?: string | null;
+  created_at: string;
+  updated_at: string;
+}
+
+/** Request payload to update application metadata or draft definition. */
+export interface ApplicationUpdateRequest {
+  name?: string | null;
+  description?: string | null;
+  draft_definition?: ApplicationDefinition | null;
+}
+
+/** Validation report for an application definition. */
+export interface ApplicationValidationResponse {
+  is_valid: boolean;
+  errors?: ValidationErrorItem[];
+  warnings?: ValidationWarningItem[];
+}
+
+/** Summary of an immutable application version. */
+export interface ApplicationVersionSummary {
+  version: number;
+  is_published: boolean;
+  changelog?: string | null;
+  created_by: string;
+  created_at: string;
+}
+
 /** Human decision payload for an approval gate. */
 export interface ApprovalDecisionRequest {
   /** Must be APPROVED or REJECTED */
@@ -295,6 +407,20 @@ export interface ColumnSchema {
   sample_values?: unknown[];
 }
 
+/** A configured component instance within a section. */
+export interface ComponentInstance {
+  id: string;
+  component_type: ComponentType;
+  title?: string | null;
+  properties?: Record<string, unknown>;
+  data_binding?: DataBindingConfig | null;
+  interaction?: InteractionConfig | null;
+  visibility_roles?: string[];
+}
+
+/** Controlled catalogue of reusable UI component types. */
+export type ComponentType = 'CONTAINER' | 'GRID' | 'TABS' | 'CARD' | 'DATA_TABLE' | 'RECORD_DETAILS' | 'METRIC_CARD' | 'STATUS_INDICATOR' | 'FORM' | 'TEXT_INPUT' | 'SELECT_INPUT' | 'DATE_INPUT' | 'MONITOR_FINDINGS_LIST' | 'APPROVAL_QUEUE' | 'AUDIT_TRAIL_VIEW' | 'DOCUMENT_SEARCH' | 'ACTION_BUTTON' | 'NAV_LINK' | 'TEXT_BLOCK';
+
 /** Aggregated financial and token spend report. */
 export interface CostSummaryResponse {
   total_cost_usd: number;
@@ -339,6 +465,17 @@ export interface DFGResponse {
   bottleneck_edge?: DFGEdge | null;
 }
 
+/** Configuration binding a component to an authorized platform query. */
+export interface DataBindingConfig {
+  source_type: DataSourceType;
+  entity_name?: string | null;
+  filters?: Record<string, unknown>[];
+  sort?: Record<string, string> | null;
+  limit?: number;
+  offset?: number;
+  parameters?: Record<string, unknown>;
+}
+
 /** Schema for registering a new external data source connection. */
 export interface DataSourceCreateRequest {
   /** Human-readable name */
@@ -359,6 +496,9 @@ export interface DataSourceResponse {
   created_at: string;
   updated_at: string;
 }
+
+/** Approved platform data-binding source types. */
+export type DataSourceType = 'ONTOLOGY_OBJECT' | 'MONITOR_FINDING' | 'APPROVAL' | 'DOCUMENT_RAG' | 'AUDIT_TRAIL' | 'STATIC';
 
 /** Health status and latency metrics for PostgreSQL database. */
 export interface DatabaseHealth {
@@ -646,6 +786,9 @@ export interface FindingStatusUpdate {
   resolution_notes?: string | null;
 }
 
+/** Controlled catalogue of permitted backend governed action types. */
+export type GovernedActionType = 'HOLD_INVOICE' | 'BLOCK_VENDOR' | 'DISPUTE_CHARGE' | 'REQUEST_CREDIT' | 'REQUEST_CREDIT_MEMO' | 'FLAG_SUPPLIER_REVIEW' | 'CUSTOM';
+
 export interface HTTPValidationError {
   detail?: ValidationError[];
 }
@@ -667,6 +810,20 @@ export interface InputsAndOutputs {
   outputs?: string[];
   decisions?: string[];
   actions?: string[];
+}
+
+/** Controlled interactive action types for components. */
+export type InteractionActionType = 'NAVIGATE' | 'SUBMIT_FORM' | 'EXECUTE_ACTION' | 'APPROVE_ACTION' | 'REJECT_ACTION' | 'OPEN_INVESTIGATION' | 'REFRESH_DATA';
+
+/** Configuration specifying user interaction or action execution. */
+export interface InteractionConfig {
+  action_type: InteractionActionType;
+  target_page_id?: string | null;
+  governed_action_type?: GovernedActionType | string | null;
+  target_adapter_type?: string | null;
+  requires_confirmation?: boolean;
+  confirmation_message?: string | null;
+  payload_template?: Record<string, unknown>;
 }
 
 /** Request to initiate an investigation on an operational finding. */
@@ -705,6 +862,9 @@ export interface InvestigationResponse {
 
 /** Lifecycle state of an analytical investigation. */
 export type InvestigationStatus = 'PENDING' | 'RUNNING' | 'COMPLETED' | 'FAILED' | 'CANCELLED';
+
+/** Page section layout organization. */
+export type LayoutType = 'SINGLE' | 'TWO_COLUMNS' | 'THREE_COLUMNS' | 'GRID' | 'TABS' | 'CARD';
 
 /** Simple liveness probe response for orchestrator checks. */
 export interface LivenessResponse {
@@ -841,6 +1001,21 @@ export interface NaturalLanguageQueryResponse {
   latency_ms: number;
   /** Server-controlled opaque compilation reference for audit attribution */
   nlq_reference: string;
+}
+
+/** A navigation menu item. */
+export interface NavItem {
+  page_id: string;
+  label: string;
+  icon?: string | null;
+  roles?: string[];
+}
+
+/** Application-wide navigation menu structure. */
+export interface NavigationConfig {
+  title: string;
+  default_page_id: string;
+  items?: NavItem[];
 }
 
 /** Statistical summary for numeric columns. */
@@ -1354,6 +1529,17 @@ export interface PropertyUpdateRequest {
   description?: string | null;
 }
 
+/** Payload served to the published application portal. */
+export interface PublishedApplicationRuntimeResponse {
+  application_id: string;
+  version: number;
+  name: string;
+  description: string;
+  definition: ApplicationDefinition;
+  user_roles?: string[];
+  published_at?: string | null;
+}
+
 /** Audit record of a structured query execution. */
 export interface QueryExecutionAuditResponse {
   id: string;
@@ -1488,6 +1674,42 @@ export type RuleOperator = 'gt' | 'gte' | 'lt' | 'lte' | 'eq' | 'neq';
 
 /** Business impact severity classification for rules and findings. */
 export type RuleSeverity = 'LOW' | 'MEDIUM' | 'HIGH' | 'CRITICAL';
+
+/** Request to invoke an interaction or action from an application component. */
+export interface RuntimeActionExecuteRequest {
+  component_id: string;
+  page_id: string;
+  action_type: InteractionActionType;
+  payload?: Record<string, unknown>;
+  confirmation_acknowledged?: boolean;
+}
+
+/** Outcome of an application component interaction. */
+export interface RuntimeActionExecuteResponse {
+  status: string;
+  message: string;
+  data?: Record<string, unknown>;
+  requires_approval?: boolean;
+  approval_id?: string | null;
+}
+
+/** Request payload to query data for an application component. */
+export interface RuntimeDataQueryRequest {
+  component_id: string;
+  page_id: string;
+  parameters?: Record<string, unknown>;
+  limit?: number;
+  offset?: number;
+}
+
+/** Resolved dataset for an application component. */
+export interface RuntimeDataQueryResponse {
+  component_id: string;
+  columns?: string[];
+  rows?: Record<string, unknown>[];
+  total_rows?: number;
+  execution_time_ms?: number;
+}
 
 /** Parameters for running deterministic semantic discovery against a dataset version. */
 export interface SemanticDiscoveryRequest {
@@ -1797,6 +2019,20 @@ export interface ValidationError {
   type: string;
   input?: unknown;
   ctx?: Record<string, unknown>;
+}
+
+/** A single validation error in the application definition. */
+export interface ValidationErrorItem {
+  path: string;
+  message: string;
+  code: string;
+}
+
+/** A non-blocking validation warning or recommendation. */
+export interface ValidationWarningItem {
+  path: string;
+  message: string;
+  code: string;
 }
 
 /** Response model for an analytical state machine execution. */

@@ -113,12 +113,12 @@ export function QueryWorkspace({ project, onBack }: QueryWorkspaceProps) {
   }, [token, activeOrg?.id, project.id])
 
   useEffect(() => {
-    loadSchema()
+    void loadSchema()
   }, [loadSchema])
 
   useEffect(() => {
     if (activeTab === 'history') {
-      loadHistory()
+      void loadHistory()
     }
   }, [activeTab, loadHistory])
 

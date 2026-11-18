@@ -10,6 +10,7 @@ import { ProcessWorkspace } from './ProcessWorkspace'
 import { MonitorsWorkspace } from './MonitorsWorkspace'
 import { InvestigationsWorkspace } from './InvestigationsWorkspace'
 import { ArchitectWorkspace } from './ArchitectWorkspace'
+import { AppBuilderWorkspace } from './app_builder/AppBuilderWorkspace'
 
 export function ProjectWorkspace() {
   const { user, token, activeOrg } = useAuth()
@@ -17,7 +18,7 @@ export function ProjectWorkspace() {
   const [loading, setLoading] = useState(false)
   const [error, setError] = useState<string | null>(null)
   const [activeProject, setActiveProject] = useState<Project | null>(null)
-  const [projectSubView, setProjectSubView] = useState<'datasets' | 'ontology' | 'query' | 'process' | 'monitors' | 'investigations' | 'architect'>('datasets')
+  const [projectSubView, setProjectSubView] = useState<'datasets' | 'ontology' | 'query' | 'process' | 'monitors' | 'investigations' | 'architect' | 'apps'>('datasets')
 
   // Create Project state
   const [showCreateModal, setShowCreateModal] = useState(false)
@@ -49,7 +50,7 @@ export function ProjectWorkspace() {
   }, [token, activeOrg?.id])
 
   useEffect(() => {
-    loadTenantProjects()
+    void loadTenantProjects()
   }, [loadTenantProjects])
 
   const handleCreateProject = async (e: FormEvent) => {
@@ -224,6 +225,21 @@ export function ProjectWorkspace() {
             </svg>
             <span>Use-Case Architect</span>
           </button>
+          <button
+            type="button"
+            data-testid="tab-apps"
+            onClick={() => setProjectSubView('apps')}
+            className={`px-3.5 py-1.5 rounded-lg text-xs font-semibold transition-colors flex items-center gap-2 ${
+              projectSubView === 'apps'
+                ? 'bg-indigo-600 text-white shadow-sm'
+                : 'text-slate-400 hover:text-white hover:bg-slate-800/60'
+            }`}
+          >
+            <svg className="w-3.5 h-3.5" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+              <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M4 5a1 1 0 011-1h14a1 1 0 011 1v2a1 1 0 01-1 1H5a1 1 0 01-1-1V5zM4 13a1 1 0 011-1h6a1 1 0 011 1v6a1 1 0 01-1 1H5a1 1 0 01-1-1v-6zM16 13a1 1 0 011-1h2a1 1 0 011 1v6a1 1 0 01-1 1h-2a1 1 0 01-1-1v-6z" />
+            </svg>
+            <span>Application Builder</span>
+          </button>
         </div>
 
         {projectSubView === 'datasets' ? (
@@ -242,8 +258,10 @@ export function ProjectWorkspace() {
           />
         ) : projectSubView === 'investigations' ? (
           <InvestigationsWorkspace project={activeProject} onBack={() => setActiveProject(null)} />
-        ) : (
+        ) : projectSubView === 'architect' ? (
           <ArchitectWorkspace project={activeProject} onBack={() => setActiveProject(null)} />
+        ) : (
+          <AppBuilderWorkspace project={activeProject} onBack={() => setActiveProject(null)} />
         )}
       </div>
     )
@@ -370,7 +388,7 @@ export function ProjectWorkspace() {
                     type="button"
                     onClick={(e) => {
                       e.stopPropagation()
-                      handleDeleteProject(proj.id, proj.name)
+                      void handleDeleteProject(proj.id, proj.name)
                     }}
                     className="text-rose-400 hover:text-rose-300 hover:underline transition-colors"
                   >

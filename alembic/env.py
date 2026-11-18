@@ -68,6 +68,10 @@ from corbel.domains.use_case_architect.models import (  # noqa: F401 - Register 
     UseCaseMessage,
     UseCaseSpecificationVersion,
 )
+from corbel.domains.app_builder.models import (  # noqa: F401 - Register Phase 12 models
+    Application,
+    ApplicationVersion,
+)
 
 # this is the Alembic Config object, which provides
 # access to the values within the .ini file in use.

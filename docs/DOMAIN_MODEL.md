@@ -1,8 +1,8 @@
-# Corbel — Conceptual Domain Model
+# Corbel â€” Conceptual Domain Model
 
 ## 1. Domain Modeling Philosophy
 
-The Corbel domain model captures the complete operational reality of an enterprise—from raw technical datasets to semantically rich business objects, dynamic process flows, continuous anomaly detection, AI-assisted investigations, and governed human approvals.
+The Corbel domain model captures the complete operational reality of an enterpriseâ€”from raw technical datasets to semantically rich business objects, dynamic process flows, continuous anomaly detection, AI-assisted investigations, and governed human approvals.
 
 > [!NOTE]
 > This document defines the **conceptual domain model** of the Corbel platform. It establishes architectural responsibilities, semantic boundaries, ownership paths, and relational cardinalities. It is **not** a database migration specification and does **not** authorize creating all tables during early phases. Conceptual entities are introduced incrementally across the 14-phase implementation roadmap (`docs/IMPLEMENTATION_PLAN.md`) as their corresponding capabilities are developed.
@@ -67,6 +67,9 @@ erDiagram
     EVALUATION_DATASET ||--o{ EVALUATION_RUN : benchmarks
     EVALUATION_RUN ||--o{ EVALUATION_RESULT : produces
     
+    PROJECT ||--o{ APPLICATION : defines
+    APPLICATION ||--o{ APPLICATION_VERSION : publishes
+
     PROJECT ||--o{ AUDIT_EVENT : records_operational
 ```
 
@@ -278,7 +281,7 @@ The conceptual model is organized into seven cohesive subdomains with explicit r
   - Captures violating records, verified factual context, timestamp, and severity.
   - Serves as the anchor for subsequent human review or AI-assisted investigations.
   - May trigger zero, one, or multiple Investigations across its lifecycle (supporting re-investigations or competing hypotheses).
-- **Lifecycle States:** `OPEN` → `INVESTIGATING` → `RECOMMENDED` → `RESOLVED` / `DISMISSED`.
+- **Lifecycle States:** `OPEN` â†’ `INVESTIGATING` â†’ `RECOMMENDED` â†’ `RESOLVED` / `DISMISSED`.
 - **Key Attributes:** `id`, `monitor_id`, `project_id`, `severity`, `status`, `summary`, `verified_context_json`, `detected_at`.
 - **Ownership/Scope:** Emitted by one `Monitor`; scoped directly to `Project` (Direct Project Scope). Enforced via composite foreign key:
   `FOREIGN KEY (project_id, monitor_id) REFERENCES monitors(project_id, id)`
@@ -293,7 +296,7 @@ The conceptual model is organized into seven cohesive subdomains with explicit r
   - Invokes bounded AI workflows to query related records and synthesize evidence.
   - Explicitly separates **verified facts** from **causal hypotheses**.
   - Calculates deterministic financial impact.
-- **Lifecycle States:** `PENDING` → `RUNNING` → `COMPLETED` → `FAILED` / `CANCELLED`.
+- **Lifecycle States:** `PENDING` â†’ `RUNNING` â†’ `COMPLETED` â†’ `FAILED` / `CANCELLED`.
 - **Key Attributes:** `id`, `finding_id`, `project_id`, `status`, `verified_facts_json`, `causal_hypothesis`, `financial_impact_usd`, `created_at`.
 - **Ownership/Scope:** Investigates one `Finding`; scoped directly to `Project` (Direct Project Scope). Enforced via composite foreign key:
   `FOREIGN KEY (project_id, finding_id) REFERENCES findings(project_id, id)`
@@ -310,7 +313,7 @@ The conceptual model is organized into seven cohesive subdomains with explicit r
 - **Responsibilities:**
   - Encapsulates target action type, exact execution payload, and validation schemas.
   - Tracks governance requirements: consequential actions require human approval prior to dispatch.
-- **Lifecycle States:** `DRAFT` → `AWAITING_APPROVAL` → `APPROVED` → `EXECUTING` → `EXECUTED` / `FAILED` / `REJECTED`.
+- **Lifecycle States:** `DRAFT` â†’ `AWAITING_APPROVAL` â†’ `APPROVED` â†’ `EXECUTING` â†’ `EXECUTED` / `FAILED` / `REJECTED`.
 - **Key Attributes:** `id`, `recommendation_id`, `project_id`, `action_type`, `target_system`, `approved_payload_json`, `is_consequential`.
 - **Ownership/Scope:** Proposed by a `Recommendation`; scoped directly to `Project` (Direct Project Scope). Same-project referential integrity between `Action` and the `Recommendation`'s parent `Investigation` is enforced at the database level via a composite foreign key `FOREIGN KEY (project_id, recommendation_id) REFERENCES recommendations(project_id, id)` (paired with a candidate key on `recommendations(project_id, id)`), or via a PostgreSQL database `CONSTRAINT TRIGGER` verifying that `NEW.project_id == (SELECT i.project_id FROM recommendations r JOIN investigations i ON r.investigation_id = i.id WHERE r.id = NEW.recommendation_id)`.
 
@@ -323,7 +326,7 @@ The conceptual model is organized into seven cohesive subdomains with explicit r
   - A changed action payload invalidates prior approvals and strictly requires a new approval; previous approvals never automatically authorize modified payloads.
   - An expired, revoked, rejected, or otherwise invalid approval cannot authorize execution.
   - Supports multiple approval attempts across revisions or re-requests.
-- **Lifecycle States:** `PENDING` → `APPROVED` / `REJECTED` / `EXPIRED` / `REVOKED`.
+- **Lifecycle States:** `PENDING` â†’ `APPROVED` / `REJECTED` / `EXPIRED` / `REVOKED`.
 - **Key Attributes:** `id`, `action_id`, `assigned_role`, `decided_by_user_id`, `status`, `approved_payload_hash`, `approved_payload_json`, `decision_rationale`, `decided_at`, `expires_at`.
 - **Ownership/Scope:** Governs one `Action` (Inherited Project Scope via `action_id`). Derives project boundary from parent Action. Maintains a unique candidate key on `(action_id, id)` to support database-enforced same-action referential integrity from `Action Execution`.
 
@@ -339,7 +342,7 @@ The conceptual model is organized into seven cohesive subdomains with explicit r
   - Retains `approval_id` and `dispatched_payload_hash` as immutable execution evidence.
   - Preserves the ability to have multiple approval attempts across action revisions without implying that a prior approval automatically authorizes a modified payload.
   - Tracks execution outcomes, failure reasons, and triggers reconciliation or compensating flows when external status is ambiguous.
-- **Lifecycle States:** `QUEUED` → `DISPATCHING` → `SUCCEEDED` / `FAILED` / `RECONCILIATION_REQUIRED`.
+- **Lifecycle States:** `QUEUED` â†’ `DISPATCHING` â†’ `SUCCEEDED` / `FAILED` / `RECONCILIATION_REQUIRED`.
 - **Key Attributes:** `id`, `action_id`, `approval_id`, `idempotency_key`, `target_adapter_type`, `status`, `attempt_count`, `dispatched_payload_json`, `dispatched_payload_hash`, `adapter_response_json`, `dispatched_at`, `completed_at`.
 - **Ownership/Scope:** Executes one `Action` (Inherited Project Scope via `action_id`), authorized by an Approval belonging to the same Action. Same-action referential integrity is guaranteed at the database schema level via a composite foreign key:
   `FOREIGN KEY (action_id, approval_id) REFERENCES approvals(action_id, id)`
@@ -352,12 +355,12 @@ The conceptual model is organized into seven cohesive subdomains with explicit r
 #### 24. Task Execution
 - **Purpose:** Durable background job entity managing the operational lifecycle, claiming, lease, and recovery of asynchronous jobs in PostgreSQL.
 - **Responsibilities:**
-  - Manages durable job lifecycle (`PENDING` → `RUNNING` → `COMPLETED` / `FAILED` / `CANCELLED`).
+  - Manages durable job lifecycle (`PENDING` â†’ `RUNNING` â†’ `COMPLETED` / `FAILED` / `CANCELLED`).
   - Supports safe concurrent task claiming via `SELECT ... FOR UPDATE SKIP LOCKED` by preventing multiple workers from claiming the same available task during the same claim cycle. (Reliable execution and recovery also depend on time-bounded worker leases, heartbeat monitoring, lease ownership validation, checkpoint recovery, idempotent operations, and bounded retries to handle stale workers and ambiguous external outcomes).
   - Tracks worker leases, heartbeat monitoring, and safe checkpoint resumption.
   - Enforces bounded retries with backoff and graceful worker shutdown.
   - Executes long-running tasks: may execute zero or one primary `Workflow Execution` (`TASK_EXECUTION ||--o| WORKFLOW_EXECUTION : executes`), or execute plain deterministic background jobs (such as CSV parsing, dataset schema profiling, or scheduled maintenance sweeps).
-- **Lifecycle States:** `PENDING` → `RUNNING` → `COMPLETED` / `FAILED` / `CANCELLED`.
+- **Lifecycle States:** `PENDING` â†’ `RUNNING` â†’ `COMPLETED` / `FAILED` / `CANCELLED`.
 - **Key Attributes:** `id`, `project_id`, `task_type` (`DATASET_IMPORT`, `SCHEMA_PROFILING`, `WORKFLOW_RUN`, `MONITOR_SWEEP`), `status`, `worker_id`, `lease_expires_at`, `last_heartbeat_at`, `retry_count`, `max_retries`, `checkpoint_data_json`, `cancellation_requested`, `started_at`, `ended_at`, `error_diagnostics_json`.
 - **Ownership/Scope:** Scoped directly to `Project` (Direct Project Scope).
 
@@ -367,7 +370,7 @@ The conceptual model is organized into seven cohesive subdomains with explicit r
   - Tracks workflow identity, version, inputs, outputs, current state, and step counts against hard caps.
   - Executed within the context of a `Task Execution` (0..1 cardinality from Task Execution: a task execution executes zero or one primary workflow execution).
   - Supports hierarchical execution via optional parent-child execution references (`parent_execution_id`).
-- **Lifecycle States:** `INITIALIZED` → `STEPPING` → `COMPLETED` / `FAILED` / `CANCELLED`.
+- **Lifecycle States:** `INITIALIZED` â†’ `STEPPING` â†’ `COMPLETED` / `FAILED` / `CANCELLED`.
 - **Key Attributes:** `id`, `task_execution_id`, `project_id`, `workflow_type` (`DATA_DISCOVERY`, `PROCESS_MINING`, `INVESTIGATION`, `RULE_GENERATION`), `workflow_version`, `status`, `current_state`, `step_count`, `max_steps`, `input_parameters_json`, `result_data_json`, `parent_execution_id`, `started_at`, `ended_at`.
 - **Ownership/Scope:** Scoped directly to `Project` (Direct Project Scope); executed by one `Task Execution`. Enforced via composite foreign key: `FOREIGN KEY (project_id, task_execution_id) REFERENCES task_executions(project_id, id)`.
 
@@ -398,8 +401,8 @@ The conceptual model is organized into seven cohesive subdomains with explicit r
   - Manages prompt text, Pydantic input/output schemas, model compatibility, and token budgets.
   - Strictly immutable: existing prompt versions are **never** modified in place. Any change creates a new `Prompt Version`.
   - Supports instant production rollback by restoring the active deployment reference to a previously approved immutable prompt version; historical versions remain unchanged.
-  - Governs formal lifecycle progression: `DRAFT` → `TEST` → `EVALUATE` → `APPROVE` → `DEPLOY` → `MONITOR` → `RETIRE`.
-- **Lifecycle States:** `DRAFT` → `TEST` → `EVALUATE` → `APPROVE` → `DEPLOY` → `MONITOR` → `RETIRE`.
+  - Governs formal lifecycle progression: `DRAFT` â†’ `TEST` â†’ `EVALUATE` â†’ `APPROVE` â†’ `DEPLOY` â†’ `MONITOR` â†’ `RETIRE`.
+- **Lifecycle States:** `DRAFT` â†’ `TEST` â†’ `EVALUATE` â†’ `APPROVE` â†’ `DEPLOY` â†’ `MONITOR` â†’ `RETIRE`.
 - **Key Attributes:** `id`, `prompt_definition_id`, `version_tag`, `lifecycle_state`, `model_compatibility`, `token_budget_input`, `token_budget_output`, `template_text`, `created_at`.
 - **Ownership/Scope:** Versions one `Prompt Definition`.
 
@@ -466,10 +469,10 @@ The conceptual model is organized into seven cohesive subdomains with explicit r
 #### 33. Use Case
 - **Purpose:** Root entity representing a business operational problem statement undergoing architectural discovery, structured blueprinting, and solution design.
 - **Responsibilities:**
-  - Tracks business objectives, problem descriptions, and solution lifecycle states (`DRAFT` → `DISCOVERY` → `REVIEW` → `APPROVED`).
+  - Tracks business objectives, problem descriptions, and solution lifecycle states (`DRAFT` â†’ `DISCOVERY` â†’ `REVIEW` â†’ `APPROVED`).
   - Scoped strictly to Organization and Project (`organization_id`, `project_id`).
   - Records the approving human user and approval timestamp upon formal review.
-- **Lifecycle States:** `DRAFT` → `DISCOVERY` → `REVIEW` → `APPROVED`.
+- **Lifecycle States:** `DRAFT` â†’ `DISCOVERY` â†’ `REVIEW` â†’ `APPROVED`.
 - **Key Attributes:** `id`, `organization_id`, `project_id`, `title`, `description`, `status`, `created_by`, `approved_by`, `approved_at`, `current_version`, `created_at`, `updated_at`.
 - **Ownership/Scope:** Scoped directly to `Project` and `Organization` (Direct Project Scope).
 
@@ -635,7 +638,7 @@ Corbel categorizes all system constraints into five explicit enforcement tiers, 
      - Cryptographic verification: Computing SHA-256 over deterministic canonical JSON of approved payload vs. dispatched payload (`dispatched_payload_hash == approved_payload_hash`).
      - Dynamic lifecycle and expiration validation: Verifying that the referenced `Approval` is in `APPROVED` status, within its validity window (`expires_at > now()`), and has not been revoked.
      - Deterministic authorization: RBAC/ABAC verification that the approving user holds required roles/permissions for the action category and financial threshold (Zero LLM Trust).
-     - AI state machine governance: Bounded iteration caps (5–8 steps), dollar/token budget enforcement, timeout aborts, and prompt template rendering.
+     - AI state machine governance: Bounded iteration caps (5â€“8 steps), dollar/token budget enforcement, timeout aborts, and prompt template rendering.
      - Adapters & External idempotency: Persisting and reusing `idempotency_key` across retry dispatches; dispatching exclusively via `SimulatedTargetAdapter` for P2P demonstration.
 
 ### Core Tenancy & Referential Integrity Invariants
@@ -744,7 +747,7 @@ stateDiagram-v2
 
 ### Task Execution vs. Workflow Execution Separation
 1. **Task Execution Responsibilities:**
-   - Manages durable physical job lifecycle (`PENDING` → `RUNNING` → `COMPLETED` / `FAILED` / `CANCELLED`) in PostgreSQL.
+   - Manages durable physical job lifecycle (`PENDING` â†’ `RUNNING` â†’ `COMPLETED` / `FAILED` / `CANCELLED`) in PostgreSQL.
    - Supports safe concurrent task claiming via `SELECT ... FOR UPDATE SKIP LOCKED` by preventing multiple workers from claiming the same available task during the same claim cycle. It does **not** globally guarantee exactly-once execution; reliable execution and fault tolerance depend on time-bounded worker leases, heartbeat monitoring, lease ownership validation, checkpoint recovery, idempotent operations, and bounded retries to handle stale workers and ambiguous external outcomes.
    - Tracks worker ownership (`worker_id`), time-bounded leases, and heartbeat timestamps.
    - Persists step checkpoints and manages recovery from the last checkpoint upon worker restart.
@@ -754,7 +757,7 @@ stateDiagram-v2
    - Executes long-running tasks: executes zero or one primary `Workflow Execution` (`TASK_EXECUTION ||--o| WORKFLOW_EXECUTION : executes`). A task execution with no workflow execution represents a deterministic background job (such as CSV parsing, dataset schema profiling, or scheduled maintenance sweeps). A workflow-driven task executes its associated Workflow Execution.
 2. **Workflow Execution Responsibilities:**
    - Governs the business or AI analytical workflow state machine (e.g., `DataDiscovery`, `P2PInvestigation`).
-   - Tracks current workflow state, step counts against hard iteration caps (e.g., 5–8 steps), and Pydantic-validated results.
+   - Tracks current workflow state, step counts against hard iteration caps (e.g., 5â€“8 steps), and Pydantic-validated results.
    - Does **not** manage worker leases, heartbeats, or PostgreSQL job claiming.
    - Supports hierarchical workflow execution via optional parent-child execution references (`WORKFLOW_EXECUTION ||--o{ WORKFLOW_EXECUTION : spawns_child`).
 
@@ -902,7 +905,48 @@ erDiagram
 
 ---
 
-## 11. Core Domain Invariants Summary
+## 11. Application Builder Subdomain
+
+The Application Builder enables enterprise teams to create, configure, preview, publish, and operate domain-specific applications through declarative blueprints without writing code.
+
+```mermaid
+erDiagram
+    PROJECT ||--o{ APPLICATION : owns
+    USE_CASE |o--o{ APPLICATION : originates_from
+    APPLICATION ||--o{ APPLICATION_VERSION : snapshots_version
+    USER ||--o{ APPLICATION : creates_and_updates
+    USER ||--o{ APPLICATION : publishes
+```
+
+### Conceptual Entities & Data Model
+
+1. **Application:**
+   - **Identity & Scope:** Scoped strictly to `Organization` and `Project` workspaces (`organization_id`, `project_id`).
+   - **Source Provenance:** Optionally references a source `UseCase` (`source_use_case_id`) and specification version (`source_specification_version`).
+   - **Mutable Draft State:** Holds the active editable blueprint in `draft_definition_json`, tracking `current_version`, `published_version`, and lifecycle `status` (`DRAFT`, `VALIDATED`, `PUBLISHED`, `ARCHIVED`).
+   - **Audit Attribution:** Captures `created_by`, `updated_by`, `published_by`, and `published_at` timestamps.
+
+2. **Application Version:**
+   - **Immutable Snapshot:** Captures the exact published blueprint definition (`definition_json`), publication changelog, author (`created_by`), and creation timestamp (`created_at`).
+   - **Integrity Invariant:** Enforces unique constraint `(application_id, version)` at the database level. Versions are strictly append-only and cannot be altered or overwritten.
+
+3. **Application Definition (Blueprint Schema):**
+   - **Declarative Structure:** Complete JSON-serializable specification containing `name`, `description`, `navigation` configuration, list of `AppPage` definitions, and `AppGovernanceConfig`.
+   - **Pages & Responsive Sections:** Each page contains structured `AppSection` elements with layout specifications (`SINGLE`, `TWO_COLUMN`, `THREE_COLUMN`, `GRID`).
+   - **Component Instances:** Configured UI widgets referencing registered catalogue component types (`METRIC_CARD`, `DATA_TABLE`, `BAR_CHART`, `LINE_CHART`, `PIE_CHART`, `ACTION_BUTTON`, `FORM_INPUT`, `PROCESS_GRAPH`, `ALERT_BANNER`, `INVESTIGATION_CARD`).
+   - **Controlled Data Bindings:** Declarative data source mappings (`STATIC`, `ONTOLOGY_OBJECT`, `SAVED_QUERY`, `MONITOR_FINDINGS`, `INVESTIGATION_RESULTS`, `PROCESS_METRICS`) resolved dynamically at runtime through authorized platform services.
+   - **Governed Interactions:** UI actions (`NAVIGATE`, `SUBMIT_FORM`, `EXECUTE_ACTION`, `APPROVE_ACTION`, `REJECT_ACTION`, `OPEN_INVESTIGATION`, `REFRESH_DATA`) mapping to platform governance workflows.
+
+### Application Builder Invariants
+1. **Zero Unsafe Code Execution:** Application blueprints are pure declarative specifications. Blueprint validation strictly rejects user-submitted scripts, raw SQL keywords (`DROP TABLE`, `DELETE FROM`), JavaScript pseudoprotocols (`javascript:`), and dynamic evaluation primitives (`eval()`, `exec()`).
+2. **Draft / Published Isolation:** Editing an application draft never mutates the active published version. Published runtime portals strictly serve the immutable snapshot recorded in `ApplicationVersion`.
+3. **Deterministic RBAC & Publishing Row-Locking:** Publishing an application requires `PROJECT_LEAD` or `ORG_ADMIN` role and acquires an explicit database row lock (`FOR UPDATE`) to serialize concurrent publication attempts.
+4. **Governed Consequential Action Dispatch:** When operators trigger consequential business actions from an application (e.g. `HOLD_INVOICE`, `BLOCK_VENDOR`), the runtime creates an `Action` in `AWAITING_APPROVAL` status and an `Approval` gate requiring authorized human sign-off prior to dispatch.
+5. **Full Audit Traceability:** All creation, update, validation, publication, and deletion operations emit immutable Phase 10 audit records in PostgreSQL.
+
+---
+
+## 12. Core Domain Invariants Summary
 
 | Invariant Category | Mandatory Rule |
 | :--- | :--- |
@@ -925,7 +969,7 @@ erDiagram
 
 ---
 
-## 12. Roadmap Phase Mapping
+## 13. Roadmap Phase Mapping
 
 To prevent implementation-premature complexity, conceptual entities are mapped directly to their designated roadmap phases in `docs/IMPLEMENTATION_PLAN.md`:
 
@@ -941,4 +985,6 @@ To prevent implementation-premature complexity, conceptual entities are mapped d
 | **Phase 8: Complete AI Infrastructure** | `Workflow Execution`, `Model Invocation`, `Prompt Definition`, `Prompt Version`, `Cost Record`, `Evaluation Dataset`, `Evaluation Run`, `Evaluation Result`. |
 | **Phase 9: Governed Execution (P2P Slice)** | `Investigation`, `Recommendation`, `Action`, `Approval`, `Action Execution` (via `SimulatedTargetAdapter`). |
 | **Phase 10: Native Audit & AI Observability** | Comprehensive `Audit Event` store, optional Arize Phoenix integration. |
-| **Phases 11–13: Architect, Builder & Demos** | Blueprint models, low-code UI specification schemas, extended domain demonstration entities (Order-to-Cash, Supply Chain). |
+| **Phase 11: Use-Case Architect** | `UseCase`, `UseCaseSpecificationVersion`, `SpecificationComparison`. |
+| **Phase 12: Application Builder** | `Application`, `ApplicationVersion`, `ApplicationDefinition`, `ComponentInstance`. |
+| **Phase 13: Extended Domain Demos** | Multi-domain operational templates and demonstrations (Order-to-Cash, Inventory/Supply Chain). |

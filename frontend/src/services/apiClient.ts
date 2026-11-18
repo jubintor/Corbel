@@ -6,7 +6,9 @@
 
 import type { TokenResponse, ApiError } from '../types/auth'
 import { AuthApiError } from './auth'
+import { generateSecureId } from '../utils/crypto'
 
+export { generateSecureId }
 export const ACCESS_TOKEN_KEY = 'corbel_access_token'
 export const REFRESH_TOKEN_KEY = 'corbel_refresh_token'
 export const ACTIVE_ORG_KEY = 'corbel_active_org_id'
@@ -82,13 +84,13 @@ export async function refreshTokensSynchronized(): Promise<string> {
       if (parsed.key && (Date.now() - parsed.timestamp) < 10000) {
         idempotencyKey = parsed.key
       } else {
-        idempotencyKey = typeof crypto !== 'undefined' && crypto.randomUUID ? crypto.randomUUID() : `idemp-${Date.now()}-${Math.random().toString(36).slice(2)}`
+        idempotencyKey = generateSecureId('idemp')
       }
     } catch {
-      idempotencyKey = typeof crypto !== 'undefined' && crypto.randomUUID ? crypto.randomUUID() : `idemp-${Date.now()}-${Math.random().toString(36).slice(2)}`
+      idempotencyKey = generateSecureId('idemp')
     }
   } else {
-    idempotencyKey = typeof crypto !== 'undefined' && crypto.randomUUID ? crypto.randomUUID() : `idemp-${Date.now()}-${Math.random().toString(36).slice(2)}`
+    idempotencyKey = generateSecureId('idemp')
   }
 
   if (typeof localStorage !== 'undefined') {

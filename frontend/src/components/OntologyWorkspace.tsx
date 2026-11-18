@@ -152,7 +152,7 @@ export function OntologyWorkspace({ project, onBack }: OntologyWorkspaceProps) {
   }, [token, activeOrg?.id, project.id])
 
   useEffect(() => {
-    loadOntologyData()
+    void loadOntologyData()
   }, [loadOntologyData])
 
   // Refresh selected object's full detail with properties
@@ -666,7 +666,7 @@ export function OntologyWorkspace({ project, onBack }: OntologyWorkspaceProps) {
                           type="button"
                           onClick={(e) => {
                             e.stopPropagation()
-                            handleDeleteBusinessObject(obj)
+                            void handleDeleteBusinessObject(obj)
                           }}
                           className="text-rose-400 hover:text-rose-300 text-[10px] hover:underline"
                         >

@@ -1,4 +1,5 @@
 import type { User, TokenResponse, ApiError } from '../types/auth'
+import { generateSecureId } from '../utils/crypto'
 
 const API_BASE_URL = (import.meta.env.VITE_API_BASE_URL as string | undefined) || ''
 
@@ -51,7 +52,7 @@ export async function loginUser(email: string, password: string): Promise<TokenR
 }
 
 export async function refreshTokens(refreshToken: string, idempotencyKey?: string): Promise<TokenResponse> {
-  const idemp = idempotencyKey ?? (typeof crypto !== 'undefined' && crypto.randomUUID ? crypto.randomUUID() : `idemp-${Date.now()}-${Math.random().toString(36).slice(2)}`)
+  const idemp = idempotencyKey ?? generateSecureId('idemp')
   const res = await fetch(`${API_BASE_URL}/api/v1/auth/refresh`, {
     method: 'POST',
     headers: { 'Content-Type': 'application/json' },
